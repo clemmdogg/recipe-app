@@ -83,6 +83,23 @@ All app code lives under `src/` (import it via the `@/` alias). Only routes go i
 - Schema changes go through numbered migrations, never edit an existing migration
 - Use parameterized queries only
 
+How it is wired:
+
+- **Startup:** `SQLiteProvider` in `src/app/_layout.tsx` opens `recipes.db` and runs `initializeDatabase` (`src/db/initialize.ts`) before any screen renders. `initializeDatabase` turns on WAL and foreign keys, then runs pending migrations. Query functions take the database from `useSQLiteContext()` as a parameter.
+- **Migrations** live in `src/db/migrations/` (`001-initial.ts`, ...) and are listed in order in `src/db/migrations/index.ts`.
+  - Versions must be 1, 2, 3, ..., and `PRAGMA user_version` stores the current one.
+  - All pending migrations run in one transaction together with the version update.
+  - Add a new file to change the schema.
+- **Type data-layer functions** against the `Database` type in `src/db/types.ts`, not `SQLiteDatabase`, so they run in tests.
+- **Transactions:** use `withTransactionAsync`. `withExclusiveTransactionAsync` doesn't work on web and opens a new connection without foreign keys.
+- **Column conventions:**
+  - Timestamps are ISO 8601 UTC strings (`new Date().toISOString()`).
+  - Calendar dates are `'YYYY-MM-DD'`.
+  - Booleans are INTEGER 0/1.
+  - Tables are `STRICT`.
+  - Queries must filter out soft-deleted rows (`deleted_at IS NULL`).
+- **Web** needs `metro.config.js` (`.wasm` assets and COEP/COOP headers in dev) and the same headers in the `expo-router` plugin options in `app.json` for deployed builds.
+
 ## UI rules
 
 - Every screen handles loading, empty and error states
@@ -105,6 +122,10 @@ The app runs on phones and tablets (`ios.supportsTablet`) in both portrait and l
 - Put tests in `src/__tests__/`
 - `jest-expo` replaces native modules with mocks, so native calls such as `expo-crypto`'s
   `randomUUID()` or `expo-sqlite` return nothing in tests. Mock them explicitly
+- **Database tests:** use `createTestDatabase()` from `jest/node-sqlite-database.ts`, then `initializeDatabase(db)`.
+  - It runs the real SQL against an in-memory database through Node's built-in `node:sqlite`. Node prints an "ExperimentalWarning" for it, which is expected.
+  - Don't mock `expo-sqlite` for data-layer tests.
+- Helpers shared by tests live in `jest/`, not `src/__tests__/`, because every file in `__tests__` is run as a test
 
 ## Working with me
 
