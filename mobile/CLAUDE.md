@@ -6,9 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-This is the mobile client of a recipe app (`recipe-app/mobile`), built on Expo SDK 58, React Native 0.88, React 19.3 and TypeScript 6. The starter demo content has been removed. The four tabs exist, but each one is still a placeholder `EmptyState` screen.
+This is the mobile client of a recipe app (`recipe-app/mobile`), built on Expo SDK 58, React Native 0.88, React 19.3 and TypeScript 6.
 
-`expo-sqlite` is installed and registered as a config plugin in `app.json` but not used yet, so local persistence is expected to use it.
+- **Working locally:** Recipes, Plan, List and Pantry are complete, with all data in a local SQLite database (`expo-sqlite`).
+- **Placeholder:** the Household tab, until login and the API exist.
+- **Next:** the self-built REST API in `../api/`, then login, household and sync. See "Planned: login and household sync" below.
 
 ## Commands
 
@@ -265,8 +267,9 @@ Recipes and ingredients come from TheMealDB API.
 
 1. **Recipes** – search TheMealDB and save favorite recipes
 2. **Plan** – organize saved recipes into a weekly dinner plan
-3. **List** – shopping lists generated from the plan, minus what's in the pantry
+3. **List** – the week's shopping list, which follows the plan, minus what's in the pantry
 4. **Pantry** – ingredients the family has at home
+5. **Household** – the family's members, invites and account (placeholder until login exists)
 
 ### Core flow
 
@@ -303,5 +306,6 @@ if you think one should change instead of silently working around it.
   If the same ingredient appears in several recipes, list each measure
   separately on the shopping list.
 - **IDs:** Recipes use TheMealDB's `idMeal` as their ID. All our own tables
-  (plans, shopping lists, list items, pantry) use UUIDs (`expo-crypto`
-  `randomUUID()`), stored as `TEXT`, to support cloud sync later.
+  use UUIDs stored as `TEXT`, to support cloud sync later. Name-based UUIDs are
+  used where a row has a natural key: pantry items, shopping lists and list
+  lines. Other rows use `randomUUID()`. See "Data layer rules".
