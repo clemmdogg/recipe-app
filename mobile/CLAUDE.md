@@ -109,9 +109,13 @@ The plan is to build this after the pantry and shopping list work locally. Check
   - Delete the local database, since the data is safe in the cloud.
   - Warn first if changes haven't been synced yet.
 
+**Decided: repository layout**
+
+- One git repository at `recipe-app/` with the Expo app in `mobile/` (this folder) and the API in `api/`. That way the app and the API can share TypeScript types.
+- Run app commands (`npm test`, `npx expo ...`) from `mobile/`. Git commands work from anywhere in `recipe-app/`, and paths in git output start with `mobile/`.
+
 **Not decided yet**
 
-- **Where the API code lives.** The git repository is currently `recipe-app/mobile`. Options: a separate `recipe-app/api` repository, or one repository for both, which makes sharing TypeScript types easier.
 - **The API framework and libraries**, and how to run Postgres while developing locally. Docker isn't installed on the development machine.
 - **Exact endpoints.** Write an API design for the student to review before building.
 
