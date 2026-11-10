@@ -66,6 +66,66 @@ Run lint, type check and tests before considering a task done.
 Mobile recipe app built with React Native (Expo) and a local SQLite database.
 A cloud API and database will be added later, so local data must be sync-ready.
 
+## Planned: login and household sync
+
+Later, users must **log in before they can use the app**. Their data will live in a cloud database and be **shared with their family (household)**.
+
+The plan is to build this after the pantry and shopping list work locally. Check the current Supabase and Expo docs before building any of it.
+
+**Decided: households**
+
+- **Login is required.** There is no anonymous use: the app shows a sign-in screen until the user is logged in. Local data therefore always belongs to a signed-in user, so no flow is needed for merging data created before login.
+- **Data belongs to a household, not to a single user.** Everything is shared by all members and synced between their devices: saved recipes, meal plan, shopping lists and pantry. There is no personal data apart from the login itself.
+- **Each user is in exactly one household.** There is no switching between households.
+  - A new user automatically gets their own empty household.
+  - **Joining** another household with an invite moves the user there. If they were the only member of a household that has data, warn first that the data will be deleted.
+  - **Leaving** gives the user a new empty household. A household with no members left is deleted.
+- **Invites** are a link containing a code, shared via the system share sheet. They expire after 7 days.
+- **Permissions:** every member can edit all data and invite others. Only the household's creator can remove other members.
+- **The Household tab** (`src/app/household/`) is where the household is managed: name, members, invite, join with code, leave, and sign out.
+  - It is the 5th and last tab, because Android allows at most 5. Account and future settings go here too.
+  - It is a placeholder until accounts exist.
+
+**Decided: backend and login**
+
+- **Supabase** provides auth, a Postgres database and realtime updates. Postgres mirrors the local SQLite schema almost 1:1.
+- **Row Level Security** limits every table to the user's household, so the database itself enforces access.
+- **Sign-in:**
+  - The main method is a one-time code by email, so nobody has to remember a password.
+  - Sign in with Apple and Google are also offered. Apple requires Sign in with Apple when other social logins are offered on iOS; verify this when building.
+- **Logout:**
+  - Delete the local database, since the data is safe in the cloud.
+  - Warn first if changes haven't been synced yet.
+
+**Decided: sync and conflicts**
+
+- **Own simple sync, not a sync framework.**
+  - Push locally changed rows (`updated_at` after the last sync), and pull rows changed by others since the last sync.
+  - Offline changes wait and are pushed later.
+  - Reconsider a framework such as PowerSync only if this proves insufficient. It needs a development build instead of Expo Go, plus a rewrite of the data layer.
+- **Last write wins per row.** The server sets `updated_at` when it receives a change, because device clocks can't be trusted.
+- **A soft delete beats a concurrent edit.**
+- **Rows with a natural key get deterministic ids** derived from that key, so the same row created on two devices merges into one. This applies to pantry items (by ingredient name) and recipe ingredients (by recipe id + position). Rows that are meant to repeat, such as meal plan entries and shopping list items, keep random UUIDs.
+- **Realtime updates** keep the shopping list live while family members shop at the same time.
+
+**Decided: settings**
+
+- None exist yet.
+- New settings are **household-wide** by default, e.g. which day the week starts.
+- Settings about the person or device, such as light/dark mode or notifications, are **personal**.
+
+**What this means for code written now**
+
+- Keep household data sync-ready (UUIDs, timestamps, soft deletes), as the data layer rules require.
+- Don't add `user_id` or `household_id` columns to local tables yet. How ownership is stored gets decided together with the backend.
+- Make changes per row, e.g. tick off one item or remove one entry. Don't rewrite whole lists, so edits from different family members can be merged.
+- Keep all data access in `src/db/` and `src/api/`, and open the database only in the root layout's `SQLiteProvider`. Then auth, the household database and sync can be added in one place.
+
+**Known issues to fix when building sync** (both solved by deterministic ids)
+
+- `saveRecipe` gives a recipe's ingredients new random UUIDs each time it is saved. If two members save the same recipe offline, the merge would duplicate its ingredients.
+- Two members can add the same pantry ingredient offline. Locally a unique index prevents this, but the two rows would collide on sync.
+
 ## Tech stack
 
 - Expo + Expo Router, using Continuous Native Generation (no hand-edited `ios/`/`android/`)

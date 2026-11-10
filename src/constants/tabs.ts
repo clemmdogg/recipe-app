@@ -4,7 +4,7 @@ export type AppTab = {
   /** Route name of the tab's folder in `src/app/`; native tab triggers match on this. */
   name: string;
   /** URL the tab opens; used by the web tab bar. */
-  href: '/' | '/plan' | '/list' | '/pantry';
+  href: '/' | '/plan' | '/list' | '/pantry' | '/household';
   label: string;
   /** SF Symbol (iOS). */
   sf: { default: SFSymbol; selected: SFSymbol };
@@ -41,5 +41,13 @@ export const TabRoutes: readonly AppTab[] = [
     label: 'Pantry',
     sf: { default: 'refrigerator', selected: 'refrigerator.fill' },
     md: 'kitchen',
+  },
+  // Android allows at most 5 tabs, so this is the last one. Account and settings go in here.
+  {
+    name: 'household',
+    href: '/household',
+    label: 'Household',
+    sf: { default: 'person.3', selected: 'person.3.fill' },
+    md: 'group',
   },
 ];
