@@ -35,8 +35,18 @@ Run lint, type check and tests before considering a task done.
   - `app-tabs.web.tsx` builds a bottom tab bar with `expo-router/ui` (`Tabs`/`TabList`/`TabTrigger`). Its triggers use `name` plus `href`.
   - `use-color-scheme` follows the same pattern.
 - **Icons**: Use `SymbolView` from `expo-symbols` with `name={{ ios, android, web }}`. iOS uses SF Symbols, and Android and web use Material Symbols names. A bare string renders only on iOS.
+  - Android and web draw Material Symbols with an outlined font, so names like `favorite` never look filled.
+  - For a filled icon, pass `weight={FilledSymbolWeight}` from `src/constants/symbols.ts`, and use the `.fill` SF Symbol on iOS.
+  - `SymbolView` loads its font only on mount, so give it a `key` that changes when switching between filled and outlined. `HeartIcon` shows the pattern.
 - **Theming**: `src/constants/theme.ts` defines `Colors` (light/dark), `Fonts` (per platform, and on web it points to CSS variables in `src/global.css`), `Spacing` and `MaxContentWidth`. Use `useTheme()` or the `ThemedText`/`ThemedView` components (`type`/`themeColor` props) instead of hard-coding colors.
 - **Path aliases**: `@/*` maps to `src/*`, and `@/assets/*` maps to `assets/*`.
+- **Loading data in screens**: use `useAsyncResource(key, load)` from `src/hooks/use-async-resource.ts`. Don't write ad-hoc `useEffect` + `useState` fetching.
+  - It reloads when `key` changes (pass `null` to load nothing) and aborts stale requests.
+  - It returns `status` (`idle`/`loading`/`success`/`error`), `data`, `error` and `reload()`.
+  - `data` is kept while reloading, so lists don't flash empty.
+  - Feature hooks such as `use-recipe-browser.ts` and `use-recipe-details.ts` combine it with the API and `src/db/` functions. Screens stay thin.
+- **Shared UI states**: `LoadingState`, `ErrorState` (with an optional retry) and `EmptyState` in `src/components/`.
+- **Detail screens** live inside their tab's folder, e.g. `src/app/(recipes)/recipe/[id].tsx` is `/recipe/[id]`. Link to them with the object form: `{ pathname: '/recipe/[id]', params: { id } }`.
 - **React Compiler is enabled** (`experiments.reactCompiler`), so manual `useMemo`/`useCallback` is usually unnecessary.
 - **Web output is `server`** (`app.json` → `web.output`), which allows API routes (`+api.ts`) in `src/app/`.
 
@@ -110,7 +120,8 @@ How it is wired:
 The app runs on phones and tablets (`ios.supportsTablet`) in both portrait and landscape (`orientation: "default"`). On iPad the tab bar can turn into a sidebar (`sidebarAdaptable`).
 
 - Every screen must work in four cases: compact (portrait phone, narrow iPad split view) and wide (landscape phone, tablet), each in portrait and landscape
-- Base layout decisions on `useLayout()` from `src/hooks/use-layout.ts` (`isWide`, `isLandscape`, `width`). The breakpoint is `WideLayoutBreakpoint` in `src/constants/theme.ts`
+- Base layout decisions on `useLayout()` from `src/hooks/use-layout.ts` (`isWide`, `isLandscape`, `width`, `gridColumns`). The breakpoint is `WideLayoutBreakpoint` in `src/constants/theme.ts`
+- For card grids, measure the list's own width with `onLayout` and pass it to `getLayout()`, as `RecipeGrid` does. The iPad sidebar and split view make the content narrower than the window
 - Don't use `Dimensions.get()` (it doesn't update on rotation) or device checks like `Device.deviceType`. Decide by available width, not by device type
 - In wide layouts, use the space (grid columns, list and detail side by side). Don't just stretch the phone layout. Constrain reading content such as text and forms to `MaxContentWidth`
 - Respect safe areas in landscape, where the notch and home indicator move to the sides

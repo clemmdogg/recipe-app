@@ -21,4 +21,18 @@ describe('getLayout', () => {
     expect(getLayout(599, 900).isWide).toBe(false);
     expect(getLayout(600, 900).isWide).toBe(true);
   });
+
+  it('uses two grid columns on a portrait phone, even a narrow one', () => {
+    expect(getLayout(390, 844).gridColumns).toBe(2);
+    expect(getLayout(320, 568).gridColumns).toBe(2);
+  });
+
+  it('adds grid columns as the window gets wider', () => {
+    expect(getLayout(844, 390).gridColumns).toBe(4);
+    expect(getLayout(820, 1180).gridColumns).toBe(4);
+  });
+
+  it('caps the grid at five columns', () => {
+    expect(getLayout(1366, 1024).gridColumns).toBe(5);
+  });
 });

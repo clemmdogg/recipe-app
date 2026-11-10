@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/material-symbols": "^0.4.53",
     "@expo/ui": "~58.0.27",
     "expo": "~58.0.23",
     "expo-constants": "~58.0.15",
@@ -50,6 +51,9 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "setupFiles": [
+      "<rootDir>/jest/setup.ts"
+    ],
     "moduleNameMapper": {
       "\\.css$": "<rootDir>/jest/style-mock.js"
     }
