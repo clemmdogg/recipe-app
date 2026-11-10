@@ -49,7 +49,9 @@ export default function PantryScreen() {
           query={pantry.query}
           catalog={pantry.catalog}
           suggestions={pantry.suggestions}
-          isInPantry={pantry.isInPantry}
+          isAdded={pantry.isInPantry}
+          addedLabel="In pantry"
+          targetName="pantry"
           onAdd={onAdd}
         />
       ) : (

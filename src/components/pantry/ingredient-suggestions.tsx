@@ -14,16 +14,23 @@ type IngredientSuggestionsProps = {
   query: string;
   catalog: { status: string; reload: () => void };
   suggestions: AsyncResource<CatalogIngredient[]>;
-  isInPantry: (name: string) => boolean;
+  /** Whether an ingredient is already added, e.g. in the pantry or on the list. */
+  isAdded: (name: string) => boolean;
+  /** Shown instead of the add button for added ingredients, e.g. "In pantry". */
+  addedLabel: string;
+  /** Where ingredients are added to, for screen readers, e.g. "pantry". */
+  targetName: string;
   onAdd: (name: string) => void;
 };
 
-/** Ingredients matching the search, each with an add button or an "In pantry" mark. */
+/** Ingredients matching the search, each with an add button or an "already added" mark. */
 export function IngredientSuggestions({
   query,
   catalog,
   suggestions,
-  isInPantry,
+  isAdded,
+  addedLabel,
+  targetName,
   onAdd,
 }: IngredientSuggestionsProps) {
   const theme = useTheme();
@@ -50,14 +57,18 @@ export function IngredientSuggestions({
   return (
     <View style={[styles.list, { backgroundColor: theme.backgroundElement }]}>
       {suggestions.data.map((ingredient) => {
-        const added = isInPantry(ingredient.name);
+        const added = isAdded(ingredient.name);
         return (
           <Pressable
             key={ingredient.name}
             onPress={() => onAdd(ingredient.name)}
             disabled={added}
             accessibilityRole="button"
-            accessibilityLabel={added ? `${ingredient.name}, already in pantry` : `Add ${ingredient.name}`}
+            accessibilityLabel={
+              added
+                ? `${ingredient.name}, already in ${targetName}`
+                : `Add ${ingredient.name} to ${targetName}`
+            }
             accessibilityState={{ disabled: added }}
             style={({ pressed }) => [styles.suggestion, pressed && styles.pressed]}>
             <IngredientRow
@@ -66,7 +77,7 @@ export function IngredientSuggestions({
               trailing={
                 added ? (
                   <ThemedText type="small" themeColor="textSecondary">
-                    In pantry
+                    {addedLabel}
                   </ThemedText>
                 ) : (
                   <SymbolView

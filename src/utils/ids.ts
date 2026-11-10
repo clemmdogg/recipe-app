@@ -6,6 +6,10 @@ import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
  */
 export const IdNamespaces = {
   pantryItem: '3f0c8a52-6d1e-4b7a-9c35-2a8e41f7d0b6',
+  /** Keyed by the week's Monday date key: one shopping list per week. */
+  shoppingList: '85c87aaa-ef3f-435c-abf0-f1e760656f1a',
+  /** Keyed by list id + lowercased ingredient name: one line per ingredient per list. */
+  shoppingListItem: 'd5f2c1d1-f7f3-49fe-83bb-661c9c8732a7',
 } as const;
 
 /**

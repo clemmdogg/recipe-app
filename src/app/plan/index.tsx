@@ -63,11 +63,11 @@ export default function PlanScreen() {
       ]}>
       <View style={[styles.header, !showColumns && styles.narrow]}>
         <WeekHeader
-          weekStart={plan.weekStart}
-          today={plan.today}
-          onPrevious={plan.showPreviousWeek}
-          onNext={plan.showNextWeek}
-          onToday={plan.showCurrentWeek}
+          weekStart={plan.week.weekStart}
+          today={plan.week.today}
+          onPrevious={plan.week.showPreviousWeek}
+          onNext={plan.week.showNextWeek}
+          onToday={plan.week.showCurrentWeek}
         />
       </View>
       <View style={!showColumns && styles.narrow}>{days}</View>

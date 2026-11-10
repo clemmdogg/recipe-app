@@ -163,6 +163,13 @@ All app code lives under `src/` (import it via the `@/` alias). Only routes go i
   - Rows with a natural key use a name-based UUID from `nameBasedUuid(IdNamespaces.x, key)` in `src/utils/ids.ts`, so the same row created on two devices merges on sync. Pantry items are keyed by their lowercased ingredient name.
   - Adding a row that was soft-deleted restores it: upsert on the id and clear `deleted_at`. Don't insert a new row.
   - Every other row gets `randomUUID()`.
+- **Shopping lists are derived, not stored.** There is one list per week (Monday to Sunday).
+  - `buildShoppingList` (`src/utils/shopping-list.ts`) computes it from the week's planned ingredients, the pantry, and stored rows.
+  - Only what the user does is stored in `shopping_list_items`: ticked-off lines and lines added by hand. Lines have name-based ids (week + lowercased ingredient name).
+  - Changing the plan changes the list automatically. Ticked lines stay even if their dinner is removed.
+  - Pantry ingredients are skipped and shown under "Already at home". "Need more" stores an unticked row, which puts the line back on the list.
+  - **Ticking off** a line only puts it in the cart, so it's easy to undo while shopping. The pantry isn't touched.
+  - **"Bought"** (`markCartBought`) moves everything in the week's cart into the pantry and empties the cart, in one transaction. Planned ingredients then show as "Already at home", and items added by hand disappear. Each line is a separate row update, so changes merge with other family members' ticks.
 - **Exception:** the `ingredients` table is a cache of TheMealDB's ingredient list, not household data.
   - It is keyed by name, has only `updated_at`, and is never synced.
   - `useIngredientCatalog` downloads it once and refreshes it every 30 days.
@@ -242,8 +249,8 @@ Recipes and ingredients come from TheMealDB API.
 
 ### Core flow
 
-Save recipe → add to plan → generate shopping list (skipping pantry items)
-→ checked-off items move to pantry.
+Save recipe → add to plan → shopping list follows the plan (skipping pantry items)
+→ tick items into the cart while shopping → "Bought" moves the cart to the pantry.
 
 ### Target users
 
