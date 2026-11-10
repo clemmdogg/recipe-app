@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
+import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { imageUrl } from '@/api/mealdb';
 import { LinkButton } from '@/components/link-button';
 import { IngredientList } from '@/components/recipes/ingredient-list';
-import { SaveRecipeButton } from '@/components/recipes/save-recipe-button';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
@@ -14,13 +14,12 @@ import type { Recipe } from '@/types/recipe';
 
 type RecipeDetailsProps = {
   recipe: Recipe;
-  isSaved: boolean;
-  isUpdating: boolean;
-  onToggleSaved: () => void;
+  /** Buttons shown under the title, e.g. save and add to plan. */
+  actions: ReactNode;
 };
 
 /** Recipe content. Phones stack everything; wide layouts put instructions beside the ingredients. */
-export function RecipeDetails({ recipe, isSaved, isUpdating, onToggleSaved }: RecipeDetailsProps) {
+export function RecipeDetails({ recipe, actions }: RecipeDetailsProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { isWide } = useLayout();
@@ -41,7 +40,7 @@ export function RecipeDetails({ recipe, isSaved, isUpdating, onToggleSaved }: Re
         </ThemedText>
         {details !== '' && <ThemedText themeColor="textSecondary">{details}</ThemedText>}
       </View>
-      <SaveRecipeButton isSaved={isSaved} disabled={isUpdating} onPress={onToggleSaved} />
+      {actions}
       {recipe.youtubeUrl && (
         <LinkButton label="Watch video" url={recipe.youtubeUrl} icon={{ sf: 'play.rectangle', md: 'smart_display' }} />
       )}

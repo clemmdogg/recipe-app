@@ -1,11 +1,11 @@
-import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 import { getCategories, getRecipesByCategory, searchRecipes } from '@/api/mealdb';
 import { getSavedRecipes } from '@/db/recipes';
 import { useAsyncResource, type AsyncResource } from '@/hooks/use-async-resource';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
 import type { RecipeSummary } from '@/types/recipe';
 
 const SearchDelayMs = 400;
@@ -36,8 +36,7 @@ export function useRecipeBrowser() {
   );
 
   // Saving or removing happens on the detail screen, so refresh when returning to this tab.
-  const reloadSaved = saved.reload;
-  useFocusEffect(useCallback(() => reloadSaved(), [reloadSaved]));
+  useReloadOnRefocus(saved.reload);
 
   let mode: BrowseMode = { kind: 'saved' };
   let recipes: AsyncResource<RecipeSummary[]> = saved;

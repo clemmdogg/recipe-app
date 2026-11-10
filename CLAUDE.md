@@ -47,6 +47,17 @@ Run lint, type check and tests before considering a task done.
   - Feature hooks such as `use-recipe-browser.ts` and `use-recipe-details.ts` combine it with the API and `src/db/` functions. Screens stay thin.
 - **Shared UI states**: `LoadingState`, `ErrorState` (with an optional retry) and `EmptyState` in `src/components/`.
 - **Detail screens** live inside their tab's folder, e.g. `src/app/(recipes)/recipe/[id].tsx` is `/recipe/[id]`. Link to them with the object form: `{ pathname: '/recipe/[id]', params: { id } }`.
+- **Screens shared between tabs:** put the screen in `src/components/` and add a thin route file in each tab, so navigation stays inside the current tab.
+  - The recipe screen (`RecipeScreen`, with a `tab` prop) is routed at `/recipe/[id]` and `/plan/recipe/[id]`.
+  - The "Add to plan" modal is routed at `/add-to-plan` and `/plan/add-to-plan`.
+- **Modals:** use `presentation: 'modal'` with `headerBackVisible: false` and `headerRight: () => <CloseButton />`, declared in the tab's `_layout.tsx`. Close a modal with `router.back()` after its action.
+  - Don't use `formSheet`. On Android it can't show a header, and on web it renders as a normal screen.
+- **Refreshing after changes elsewhere:** call `useReloadOnRefocus(resource.reload)` in screens that show data changed in other screens or modals. It skips the first focus to avoid double loading.
+- **Dates:** use `src/utils/dates.ts`.
+  - Calendar days are local `DateKey` strings (`'YYYY-MM-DD'`), made with `toDateKey`. Never use `toISOString().slice(0, 10)`, which gives the UTC date.
+  - Do date arithmetic with `addDays`, never by adding milliseconds, so it survives daylight saving changes.
+  - Weeks start on Monday, and display formatting uses `en-GB`.
+  - Tests run in `Europe/Copenhagen` (set in `jest/setup.ts`).
 - **React Compiler is enabled** (`experiments.reactCompiler`), so manual `useMemo`/`useCallback` is usually unnecessary.
 - **Web output is `server`** (`app.json` → `web.output`), which allows API routes (`+api.ts`) in `src/app/`.
 
