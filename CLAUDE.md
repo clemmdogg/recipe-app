@@ -48,6 +48,7 @@ Run lint, type check and tests before considering a task done.
   - Feature hooks such as `use-recipe-browser.ts` and `use-recipe-details.ts` combine it with the API and `src/db/` functions. Screens stay thin.
 - **Shared UI states**: `LoadingState`, `ErrorState` (with an optional retry) and `EmptyState` in `src/components/`.
 - **Detail screens** live inside their tab's folder, e.g. `src/app/(recipes)/recipe/[id].tsx` is `/recipe/[id]`. Link to them with the object form: `{ pathname: '/recipe/[id]', params: { id } }`.
+- **Don't wrap a `Pressable` that has a style function (`style={({ pressed }) => ...}`) in `<Link asChild>`.** Link merges the child's style as an object, so the function and all its layout styles (width, flex) are silently dropped. Navigate in `onPress` with `router.push(...)` instead.
 - **Screens shared between tabs:** put the screen in `src/components/` and add a thin route file in each tab, so navigation stays inside the current tab.
   - The recipe screen (`RecipeScreen`, with a `tab` prop) is routed at `/recipe/[id]` and `/plan/recipe/[id]`.
   - The "Add to plan" modal is routed at `/add-to-plan` and `/plan/add-to-plan`.

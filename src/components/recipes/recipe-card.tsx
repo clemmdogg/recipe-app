@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { imageUrl } from '@/api/mealdb';
@@ -20,36 +20,37 @@ export function RecipeCard({ recipe, width, isSaved }: RecipeCardProps) {
   const details = [recipe.category, recipe.area].filter(Boolean).join(' · ');
   const label = [recipe.name, details, isSaved && 'saved'].filter(Boolean).join(', ');
 
+  // Navigates in onPress rather than with <Link asChild>: Link drops a child's style function,
+  // which would lose the card's width.
   return (
-    <Link href={{ pathname: '/recipe/[id]', params: { id: recipe.id } }} asChild>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={label}
-        style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}>
-        <View>
-          <Image
-            source={imageUrl(recipe.thumbnailUrl, 'medium')}
-            recyclingKey={recipe.id}
-            contentFit="cover"
-            transition={150}
-            style={[styles.image, { backgroundColor: theme.backgroundElement }]}
-          />
-          {isSaved && (
-            <View style={[styles.savedBadge, { backgroundColor: theme.background }]}>
-              <HeartIcon filled size={20} />
-            </View>
-          )}
-        </View>
-        <View style={styles.text}>
-          <ThemedText numberOfLines={2}>{recipe.name}</ThemedText>
-          {details !== '' && (
-            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-              {details}
-            </ThemedText>
-          )}
-        </View>
-      </Pressable>
-    </Link>
+    <Pressable
+      onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}>
+      <View>
+        <Image
+          source={imageUrl(recipe.thumbnailUrl, 'medium')}
+          recyclingKey={recipe.id}
+          contentFit="cover"
+          transition={150}
+          style={[styles.image, { backgroundColor: theme.backgroundElement }]}
+        />
+        {isSaved && (
+          <View style={[styles.savedBadge, { backgroundColor: theme.background }]}>
+            <HeartIcon filled size={20} />
+          </View>
+        )}
+      </View>
+      <View style={styles.text}>
+        <ThemedText numberOfLines={2}>{recipe.name}</ThemedText>
+        {details !== '' && (
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+            {details}
+          </ThemedText>
+        )}
+      </View>
+    </Pressable>
   );
 }
 
