@@ -68,11 +68,16 @@ Run lint, type check and tests before considering a task done.
 Mobile recipe app built with React Native (Expo) and a local SQLite database.
 A cloud API and database will be added later, so local data must be sync-ready.
 
+**This is a school project.** It will not be published on the App Store or Google Play. It is shown via Expo Go, an installable Android build, or the web version.
+
+- The school requires a **self-built RESTful API** and **SSL (HTTPS)**. The API is part of what gets graded, so don't replace it with a backend service that generates the API, such as Supabase or Firebase.
+- TheMealDB's free test key `1` is allowed "for educational use", so no supporter key is needed.
+
 ## Planned: login and household sync
 
 Later, users must **log in before they can use the app**. Their data will live in a cloud database and be **shared with their family (household)**.
 
-The plan is to build this after the pantry and shopping list work locally. Check the current Supabase and Expo docs before building any of it.
+The plan is to build this after the pantry and shopping list work locally. Check current docs for every library and tool before using it.
 
 **Decided: households**
 
@@ -90,25 +95,36 @@ The plan is to build this after the pantry and shopping list work locally. Check
 
 **Decided: backend and login**
 
-- **Supabase** provides auth, a Postgres database and realtime updates. Postgres mirrors the local SQLite schema almost 1:1.
-- **Row Level Security** limits every table to the user's household, so the database itself enforces access.
+- **Own RESTful API in TypeScript on Node.js**, with a **PostgreSQL** database. Postgres mirrors the local SQLite schema almost 1:1, plus a `household_id` on household data.
+- **The API enforces access:** every request is checked against the signed-in user's household, so nobody can read or change another household's data.
+- **Hosting:** a Contabo VPS that the student rents.
+  - The API and Postgres run in Docker.
+  - **Caddy** sits in front as a reverse proxy and gets and renews Let's Encrypt certificates automatically, giving HTTPS. Only Caddy is exposed to the internet.
+  - This needs a domain name pointing at the server.
 - **Sign-in:**
-  - The main method is a one-time code by email, so nobody has to remember a password.
-  - Sign in with Apple and Google are also offered. Apple requires Sign in with Apple when other social logins are offered on iOS; verify this when building.
+  - Email and password. Passwords are hashed, never stored as plain text.
+  - The API issues tokens (JWT) that the app stores securely and sends with each request.
+  - No Apple or Google sign-in, since the app is not published.
 - **Logout:**
   - Delete the local database, since the data is safe in the cloud.
   - Warn first if changes haven't been synced yet.
+
+**Not decided yet**
+
+- **Where the API code lives.** The git repository is currently `recipe-app/mobile`. Options: a separate `recipe-app/api` repository, or one repository for both, which makes sharing TypeScript types easier.
+- **The API framework and libraries**, and how to run Postgres while developing locally. Docker isn't installed on the development machine.
+- **Exact endpoints.** Write an API design for the student to review before building.
 
 **Decided: sync and conflicts**
 
 - **Own simple sync, not a sync framework.**
   - Push locally changed rows (`updated_at` after the last sync), and pull rows changed by others since the last sync.
   - Offline changes wait and are pushed later.
-  - Reconsider a framework such as PowerSync only if this proves insufficient. It needs a development build instead of Expo Go, plus a rewrite of the data layer.
+  - The API has endpoints for pushing changed rows and pulling rows changed since a given point.
 - **Last write wins per row.** The server sets `updated_at` when it receives a change, because device clocks can't be trusted.
 - **A soft delete beats a concurrent edit.**
 - **Rows with a natural key get deterministic ids** derived from that key, so the same row created on two devices merges into one. This applies to pantry items (by ingredient name) and recipe ingredients (by recipe id + position). Rows that are meant to repeat, such as meal plan entries and shopping list items, keep random UUIDs.
-- **Realtime updates** keep the shopping list live while family members shop at the same time.
+- **Live updates** of the shopping list while family members shop at the same time are nice to have, not required. Add them last if there's time, e.g. with WebSockets, or simply by pulling changes often while the List tab is open.
 
 **Decided: settings**
 
