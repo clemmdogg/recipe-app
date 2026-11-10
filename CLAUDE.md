@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-This is the mobile client of a recipe app (`recipe-app/mobile`), currently still the unmodified `create-expo-app` starter (Expo SDK 58, React Native 0.88, React 19.3, TypeScript 6). The Home/Explore screens and most components in `src/components/` are template demo content. `npm run reset-project` moves the starter code to `example/` and leaves a blank `src/app/`.
+This is the mobile client of a recipe app (`recipe-app/mobile`), built on Expo SDK 58, React Native 0.88, React 19.3 and TypeScript 6. The starter demo content has been removed. The four tabs exist, but each one is still a placeholder `EmptyState` screen.
 
 `expo-sqlite` is installed and registered as a config plugin in `app.json` but not used yet, so local persistence is expected to use it.
 
@@ -26,12 +26,15 @@ Run lint, type check and tests before considering a task done.
 
 ## Architecture
 
-- **Routing**: Expo Router with `typedRoutes` enabled (generated types live in `.expo/types`). The root `src/app/_layout.tsx` wraps everything in a navigation `ThemeProvider` and renders `AppTabs`.
-- **Platform-split files**: `.web.tsx` / `.web.ts` variants override the native files of the same name. Tabs are the main example:
-  - `app-tabs.tsx` uses native tabs (`expo-router/native-tabs`).
-  - `app-tabs.web.tsx` builds a custom top tab bar with `expo-router/ui` (`Tabs`/`TabList`/`TabTrigger`).
-  - When you add or rename a tab, update **both** files. Native triggers match on route `name`, and web triggers use `name` plus `href`.
-  - The same pattern is used for `use-color-scheme` and `animated-icon`.
+- **Routing**: Expo Router with `typedRoutes` enabled. Generated types live in `.expo/types` and are only refreshed when the dev server runs, so after adding or removing routes, run `npm start` once before `tsc`. The root `src/app/_layout.tsx` wraps everything in a navigation `ThemeProvider` and renders `AppTabs`.
+- **Tabs**: Each tab is a folder in `src/app/` with its own `_layout.tsx` (a `Stack`) and `index.tsx`. Detail screens for a tab go in the same folder.
+  - Recipes is the `(recipes)` route group, so its `index.tsx` is the app's start route `/`. Plan, List and Pantry are at `/plan`, `/list` and `/pantry`.
+  - The tab bar is defined once in `src/constants/tabs.ts` (`TabRoutes`: route name, href, label, SF Symbol and Material icon). Add or change tabs there, not in the tab bar components.
+- **Platform-split files**: `.web.tsx` / `.web.ts` variants override the native files of the same name.
+  - `app-tabs.tsx` uses native tabs (`expo-router/native-tabs`). Its triggers match on route `name`.
+  - `app-tabs.web.tsx` builds a bottom tab bar with `expo-router/ui` (`Tabs`/`TabList`/`TabTrigger`). Its triggers use `name` plus `href`.
+  - `use-color-scheme` follows the same pattern.
+- **Icons**: Use `SymbolView` from `expo-symbols` with `name={{ ios, android, web }}`. iOS uses SF Symbols, and Android and web use Material Symbols names. A bare string renders only on iOS.
 - **Theming**: `src/constants/theme.ts` defines `Colors` (light/dark), `Fonts` (per platform, and on web it points to CSS variables in `src/global.css`), `Spacing` and `MaxContentWidth`. Use `useTheme()` or the `ThemedText`/`ThemedView` components (`type`/`themeColor` props) instead of hard-coding colors.
 - **Path aliases**: `@/*` maps to `src/*`, and `@/assets/*` maps to `assets/*`.
 - **React Compiler is enabled** (`experiments.reactCompiler`), so manual `useMemo`/`useCallback` is usually unnecessary.
