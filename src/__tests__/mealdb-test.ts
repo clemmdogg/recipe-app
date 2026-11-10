@@ -1,10 +1,13 @@
 import filterSeafood from '../../jest/fixtures/mealdb-filter-seafood.json';
 import listCategories from '../../jest/fixtures/mealdb-list-categories.json';
+import listIngredients from '../../jest/fixtures/mealdb-list-ingredients.json';
 import searchArrabiata from '../../jest/fixtures/mealdb-search-arrabiata.json';
 
 import {
   getCategories,
+  getIngredients,
   getRecipe,
+  ingredientImageUrl,
   getRecipesByCategory,
   imageUrl,
   MealDbError,
@@ -130,6 +133,31 @@ describe('getCategories', () => {
     expect(categories).toContain('Chicken');
     expect(categories).toContain('Vegetarian');
     expect(categories).toHaveLength(listCategories.meals.length);
+  });
+});
+
+describe('getIngredients', () => {
+  it('returns names and types without descriptions', async () => {
+    respondWith(listIngredients);
+
+    const ingredients = await getIngredients();
+
+    expect(ingredients).toHaveLength(listIngredients.meals.length);
+    expect(ingredients).toContainEqual({ name: 'Puff Pastry', type: 'Pastry' });
+  });
+
+  it('keeps ingredients that have no type', async () => {
+    respondWith(listIngredients);
+
+    const ingredients = await getIngredients();
+
+    expect(ingredients).toContainEqual({ name: 'Chicken', type: null });
+  });
+
+  it('builds a small image URL, encoding spaces', () => {
+    expect(ingredientImageUrl('Olive Oil')).toBe(
+      'https://www.themealdb.com/images/ingredients/Olive%20Oil-small.png'
+    );
   });
 });
 

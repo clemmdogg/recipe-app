@@ -1,3 +1,4 @@
+import type { CatalogIngredient } from '@/types/pantry';
 import type { Ingredient, Recipe, RecipeSummary } from '@/types/recipe';
 
 // Free test key "1": fine for development, but TheMealDB requires becoming a supporter
@@ -42,6 +43,20 @@ export async function getRecipesByCategory(
 export async function getCategories(signal?: AbortSignal): Promise<string[]> {
   const data = await getJson<MealsResponse>('/list.php?c=list', signal);
   return (data.meals ?? []).map((item) => clean(item.strCategory)).filter(isPresent);
+}
+
+/** All ingredient names TheMealDB knows (about 1000). Descriptions are dropped. */
+export async function getIngredients(signal?: AbortSignal): Promise<CatalogIngredient[]> {
+  const data = await getJson<MealsResponse>('/list.php?i=list', signal);
+  return (data.meals ?? []).flatMap((item) => {
+    const name = clean(item.strIngredient);
+    return name ? [{ name, type: clean(item.strType) }] : [];
+  });
+}
+
+/** Small (about 30 KB) picture of an ingredient, looked up by name. */
+export function ingredientImageUrl(name: string): string {
+  return `https://www.themealdb.com/images/ingredients/${encodeURIComponent(name)}-small.png`;
 }
 
 /** TheMealDB serves smaller variants by appending `/small`, `/medium` or `/large` to an image URL. */

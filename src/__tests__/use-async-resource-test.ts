@@ -96,6 +96,37 @@ describe('useAsyncResource', () => {
     expect(result.current).toMatchObject({ status: 'success', data: 'second' });
   });
 
+  it('clears the data while a new key loads', async () => {
+    const requests = { a: deferred<string>(), b: deferred<string>() };
+    const { result, rerender } = await renderHook(
+      ({ key }: Props) => useAsyncResource(key, () => requests[key === 'b' ? 'b' : 'a'].promise),
+      { initialProps: { key: 'a' } }
+    );
+    await act(async () => requests.a.resolve('data for a'));
+
+    await rerender({ key: 'b' });
+
+    expect(result.current).toMatchObject({ status: 'loading', data: undefined });
+  });
+
+  it('can keep the previous data while a new key loads', async () => {
+    const requests = { a: deferred<string>(), b: deferred<string>() };
+    const { result, rerender } = await renderHook(
+      ({ key }: Props) =>
+        useAsyncResource(key, () => requests[key === 'b' ? 'b' : 'a'].promise, {
+          keepPreviousData: true,
+        }),
+      { initialProps: { key: 'a' } }
+    );
+    await act(async () => requests.a.resolve('data for a'));
+
+    await rerender({ key: 'b' });
+    expect(result.current).toMatchObject({ status: 'loading', data: 'data for a' });
+
+    await act(async () => requests.b.resolve('data for b'));
+    expect(result.current).toMatchObject({ status: 'success', data: 'data for b' });
+  });
+
   it('can retry after an error', async () => {
     let call = 0;
     const { result } = await renderHook(() =>

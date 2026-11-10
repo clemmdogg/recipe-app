@@ -17,13 +17,22 @@ type Settled<T> = {
   error: Error | undefined;
 };
 
+type AsyncResourceOptions = {
+  /**
+   * While a new key loads, keep showing the data of the previous key instead of nothing.
+   * Use it for results that change as the user types, so the list doesn't flash.
+   */
+  keepPreviousData?: boolean;
+};
+
 /**
  * Loads data for `key` and reloads whenever the key changes. Pass `null` to load nothing.
  * Stale requests are aborted, so a slow old response can't overwrite a newer one.
  */
 export function useAsyncResource<T>(
   key: string | null,
-  load: (signal: AbortSignal) => Promise<T>
+  load: (signal: AbortSignal) => Promise<T>,
+  { keepPreviousData = false }: AsyncResourceOptions = {}
 ): AsyncResource<T> {
   const [attempt, setAttempt] = useState(0);
   const [settled, setSettled] = useState<Settled<T> | null>(null);
@@ -63,7 +72,7 @@ export function useAsyncResource<T>(
   const isCurrent = sameKey && settled.attempt === attempt;
   return {
     status: !isCurrent ? 'loading' : settled.error ? 'error' : 'success',
-    data: sameKey ? settled.data : undefined,
+    data: sameKey || keepPreviousData ? settled?.data : undefined,
     error: isCurrent ? settled.error : undefined,
     reload,
   };

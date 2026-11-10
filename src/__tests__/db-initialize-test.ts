@@ -50,6 +50,7 @@ describe('initializeDatabase', () => {
     await initializeDatabase(db);
 
     expect(await tableNames()).toEqual([
+      'ingredients',
       'meal_plan_entries',
       'pantry_items',
       'recipe_ingredients',

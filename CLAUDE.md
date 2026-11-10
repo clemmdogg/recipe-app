@@ -44,6 +44,7 @@ Run lint, type check and tests before considering a task done.
   - It reloads when `key` changes (pass `null` to load nothing) and aborts stale requests.
   - It returns `status` (`idle`/`loading`/`success`/`error`), `data`, `error` and `reload()`.
   - `data` is kept while reloading, so lists don't flash empty.
+  - For results that change while the user types, pass `{ keepPreviousData: true }`. The previous key's data then stays visible while the new key loads.
   - Feature hooks such as `use-recipe-browser.ts` and `use-recipe-details.ts` combine it with the API and `src/db/` functions. Screens stay thin.
 - **Shared UI states**: `LoadingState`, `ErrorState` (with an optional retry) and `EmptyState` in `src/components/`.
 - **Detail screens** live inside their tab's folder, e.g. `src/app/(recipes)/recipe/[id].tsx` is `/recipe/[id]`. Link to them with the object form: `{ pathname: '/recipe/[id]', params: { id } }`.
@@ -121,10 +122,9 @@ The plan is to build this after the pantry and shopping list work locally. Check
 - Make changes per row, e.g. tick off one item or remove one entry. Don't rewrite whole lists, so edits from different family members can be merged.
 - Keep all data access in `src/db/` and `src/api/`, and open the database only in the root layout's `SQLiteProvider`. Then auth, the household database and sync can be added in one place.
 
-**Known issues to fix when building sync** (both solved by deterministic ids)
+**Known issue to fix when building sync**
 
-- `saveRecipe` gives a recipe's ingredients new random UUIDs each time it is saved. If two members save the same recipe offline, the merge would duplicate its ingredients.
-- Two members can add the same pantry ingredient offline. Locally a unique index prevents this, but the two rows would collide on sync.
+- `saveRecipe` gives a recipe's ingredients new random UUIDs each time it is saved. If two members save the same recipe offline, the merge would duplicate its ingredients. Switch to name-based ids (recipe id + position), as pantry items already use.
 
 ## Tech stack
 
@@ -160,6 +160,12 @@ All app code lives under `src/` (import it via the `@/` alias). Only routes go i
 
 - Never write SQL inside components; always go through functions in `src/db/`
 - Use UUIDs as primary keys (no auto-increment), except recipes, which use `idMeal`
+  - Rows with a natural key use a name-based UUID from `nameBasedUuid(IdNamespaces.x, key)` in `src/utils/ids.ts`, so the same row created on two devices merges on sync. Pantry items are keyed by their lowercased ingredient name.
+  - Adding a row that was soft-deleted restores it: upsert on the id and clear `deleted_at`. Don't insert a new row.
+  - Every other row gets `randomUUID()`.
+- **Exception:** the `ingredients` table is a cache of TheMealDB's ingredient list, not household data.
+  - It is keyed by name, has only `updated_at`, and is never synced.
+  - `useIngredientCatalog` downloads it once and refreshes it every 30 days.
 - Every table has `created_at`, `updated_at` and `deleted_at` (soft deletes)
 - Schema changes go through numbered migrations, never edit an existing migration
 - Use parameterized queries only
