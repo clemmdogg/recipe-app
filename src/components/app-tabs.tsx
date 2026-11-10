@@ -10,6 +10,8 @@ export default function AppTabs() {
     <NativeTabs
       backgroundColor={theme.background}
       indicatorColor={theme.backgroundElement}
+      // iPad (iOS 18+): let the tab bar turn into a sidebar.
+      sidebarAdaptable
       // Always show labels on Android so icons don't shift up when a tab is selected.
       labelVisibilityMode="labeled"
       labelStyle={{ selected: { color: theme.text } }}>

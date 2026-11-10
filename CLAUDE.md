@@ -88,6 +88,16 @@ All app code lives under `src/` (import it via the `@/` alias). Only routes go i
 - Every screen handles loading, empty and error states
 - Accessibility: set `accessibilityLabel` on interactive elements
 
+### Responsive layout
+
+The app runs on phones and tablets (`ios.supportsTablet`) in both portrait and landscape (`orientation: "default"`). On iPad the tab bar can turn into a sidebar (`sidebarAdaptable`).
+
+- Every screen must work in four cases: compact (portrait phone, narrow iPad split view) and wide (landscape phone, tablet), each in portrait and landscape
+- Base layout decisions on `useLayout()` from `src/hooks/use-layout.ts` (`isWide`, `isLandscape`, `width`). The breakpoint is `WideLayoutBreakpoint` in `src/constants/theme.ts`
+- Don't use `Dimensions.get()` (it doesn't update on rotation) or device checks like `Device.deviceType`. Decide by available width, not by device type
+- In wide layouts, use the space (grid columns, list and detail side by side). Don't just stretch the phone layout. Constrain reading content such as text and forms to `MaxContentWidth`
+- Respect safe areas in landscape, where the notch and home indicator move to the sides
+
 ## Testing
 
 - Write tests for all functions in `src/db/` and for non-trivial hooks

@@ -63,3 +63,5 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+/** Window width (in points) from which a layout counts as "wide": tablets, landscape phones, wide iPad split views. */
+export const WideLayoutBreakpoint = 600;
