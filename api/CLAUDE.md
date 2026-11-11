@@ -8,7 +8,8 @@ The self-built REST API for the recipe app: accounts, households and sync. **The
   - project setup, `GET /v1/health`, the migration runner and the full database schema (migration 001)
   - login: `POST /v1/auth/signup`, `login`, `refresh`, `logout`, `GET /v1/me` and `DELETE /v1/me`, the access token check and rate limiting
   - household and invites: `GET`/`PATCH /v1/household`, `POST /v1/household/invites`, `POST /v1/household/leave`, `DELETE /v1/household/members/:userId`, `GET /v1/invites/:code` and `POST /v1/invites/:code/accept`
-- **Next, in this order:** sync → Docker and Caddy on the VPS, including the static `/join/<code>` page (needs a domain name first).
+  - sync: `GET /v1/changes` (pull) and `POST /v1/changes` (push)
+- **Next:** Docker and Caddy on the VPS, including the static `/join/<code>` page (needs a domain name first). Then connect the app.
 
 ## Commands
 
@@ -57,10 +58,10 @@ src/
   errors.ts       ApiError and the error response schema
   plugins/        cross-cutting: error handler, the authenticate hook
   routes/         one file per area, a Fastify plugin with Zod schemas per endpoint; shared schemas in schemas.ts
-  services/       business rules (auth, account, household, invites, membership)
+  services/       business rules (auth, account, household, invites, membership, sync)
   repositories/   all SQL
   security/       passwords (argon2), access tokens (JWT), refresh tokens (random + SHA-256), invite codes
-  types/          shared TypeScript types
+  types/          shared TypeScript types, and the Zod schemas for synced rows (sync.ts)
   db/             pool, transactions, migration runner, migrations/
 test/             *.test.ts, plus helpers/ and setup.ts
 docs/             api-design.md
@@ -87,6 +88,15 @@ Same principle as the app (see "Loose coupling" in `mobile/CLAUDE.md`): **routes
 - **Anyone leaving a household** (delete account, leave, joining another, removal) goes through `leaveHousehold()` in `services/membership.ts`, in the same transaction. It deletes an empty household or hands the creator role to the longest-standing member. `moveToNewHousehold()` gives someone a new empty household.
 - **Invite codes** are stored uppercase without the dash and shown as `XXXX-XXXX`. Normalize user input with `normalizeInviteCode()`.
 - **Optional request bodies:** Fastify passes `null` when there is no body, and Zod's `.default()` only replaces `undefined`. Use `.nullish()` and a fallback in the handler (see `routes/invites.ts`).
+
+## Sync
+
+- **`src/types/sync.ts` is the single definition of the six synced tables**: each table's id and fields as Zod schemas, the pull and push schemas, and `SyncedTableNames` in push order (parents before children). Change a synced table there, in its migration, and in the column list in `repositories/synced-rows.ts`. Its type makes a missing column a compile error.
+- **`repositories/synced-rows.ts`** has one set of functions for all six tables, built from that column list. Table and column names come only from the list; values always go in as `$` parameters.
+- **Pull** (`pullChanges`) takes each table's oldest `limit + 1` changes, merges them, and cuts at `limit`. The cursor is the last included row's change number. Columns are aliased in SQL to API field names, and timestamps are formatted as ISO strings in SQL.
+- **Push** (`pushChanges`) runs in one transaction and starts with `lockHousehold()`. **Every write to a synced table must hold that lock**, so a household's change numbers become visible in order; otherwise a pull could skip a row. Foreign key and unique violations become `400 validation_failed`.
+- **Conflict rules** are in `applyRow()` and the "Conflict rules" section of `docs/api-design.md`. Change both together.
+- **Keep the push path's types loose** (`PushedRowOfAnyTable`). A generic per-table row type there made `tsc` run out of memory working out every table combination.
 
 ## Rules
 

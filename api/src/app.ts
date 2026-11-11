@@ -14,6 +14,7 @@ import { registerAuthentication } from './plugins/authenticate.ts';
 import { registerErrorHandlers } from './plugins/error-handler.ts';
 import { createAccessTokenKey } from './security/access-tokens.ts';
 import { authRoutes, type RateLimit } from './routes/auth.ts';
+import { changesRoutes } from './routes/changes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { householdRoutes } from './routes/household.ts';
 import { inviteRoutes } from './routes/invites.ts';
@@ -79,6 +80,7 @@ export async function buildApp({
   await app.register(meRoutes, { prefix: '/v1', pool, authenticate });
   await app.register(householdRoutes, { prefix: '/v1', pool, authenticate, inviteLinkBaseUrl });
   await app.register(inviteRoutes, { prefix: '/v1', pool, authenticate, rateLimit: authRateLimit });
+  await app.register(changesRoutes, { prefix: '/v1', pool, authenticate });
 
   return app;
 }

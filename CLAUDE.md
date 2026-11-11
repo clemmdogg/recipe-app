@@ -19,11 +19,11 @@ The product and backend decisions (households, login, sync rules, hosting) are i
 
 ## Current work: the API
 
-The API has health, login, accounts, household and invites, with tests. Build the rest in this order, with tests for each part, and let the student try each part before moving on:
+The API has health, login, accounts, household, invites and sync, with tests. What is left, with tests for each part, letting the student try each part before moving on:
 
 1. ~~Login: signup, login, refresh, logout, delete account~~ Done
 2. ~~Household and invites~~ Done
-3. Sync
+3. ~~Sync~~ Done
 4. Docker and Caddy on the VPS (needs a domain name first)
 
 Then connect the app (see "Changes needed in the app" in `api/docs/api-design.md`).

@@ -342,6 +342,8 @@ Each synced row on the server has a `changeNumber`. Every time any row is create
 
 This is what tells a device what's new: "give me every row with a change number above the last one I saw". It is safer than comparing timestamps, because two changes can have the same timestamp but never the same change number.
 
+**Pushes to the same household take turns.** A push locks the household until it is saved. Without this, two pushes could run at once: one gets change number 100, the other 101, and 101 is saved first. A device pulling in between would get 101, remember it as its cursor, and then never ask for 100. Taking turns makes a household's changes become visible in the order of their numbers. Different households don't wait for each other.
+
 #### `GET /v1/changes?since={changeNumber}&limit={n}`
 
 | Query parameter | Rules |
@@ -414,7 +416,9 @@ Request:
 - `baseChangeNumber` is the row's `changeNumber` the last time this device pulled it. It is `null` for rows this device created and never pulled.
 - The server sets `createdAt`, `updatedAt` and `changeNumber`. It ignores any timestamps from the device, because device clocks can't be trusted.
 - Tables are applied in an order that respects foreign keys: recipes before their ingredients and meal plan entries, shopping lists before their items.
-- Max 1000 rows per push. The app splits larger pushes.
+- Max 1000 rows per push (and 20 MB). The app splits larger pushes.
+- Every row is sent with all its fields, also when it is deleted.
+- A row that was created and deleted on the device before it was ever pushed is skipped: there is nothing to delete on the server.
 
 Response **200**:
 
@@ -429,7 +433,7 @@ Response **200**:
 
 After pushing, the app pulls. That brings in other people's changes and the server's version of any rejected rows.
 
-Errors: **400** `validation_failed` (for example a meal plan entry pointing to a recipe that doesn't exist in the household). Nothing is saved in that case.
+Errors: **400** `validation_failed`, for example a row that breaks its table's rules (a date that isn't `YYYY-MM-DD`), more than 1000 rows, or a meal plan entry pointing to a recipe that doesn't exist in the household. Nothing is saved in that case.
 
 #### Conflict rules
 
