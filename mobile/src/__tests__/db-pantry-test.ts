@@ -4,9 +4,9 @@ import {
   getIngredientCatalogUpdatedAt,
   replaceIngredientCatalog,
   searchIngredients,
-} from '@/db/ingredients';
+} from '@/repositories/ingredients';
 import { initializeDatabase } from '@/db/initialize';
-import { addToPantry, getPantryItems, pantryItemId, removeFromPantry } from '@/db/pantry';
+import { addToPantry, getPantryItems, pantryItemId, removeFromPantry } from '@/repositories/pantry';
 import type { CatalogIngredient } from '@/types/pantry';
 
 let db: ReturnType<typeof createTestDatabase>;

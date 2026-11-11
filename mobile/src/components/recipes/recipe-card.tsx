@@ -2,11 +2,11 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { imageUrl } from '@/api/mealdb';
 import { HeartIcon } from '@/components/recipes/heart-icon';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { imageUrl } from '@/services/mealdb';
 import type { RecipeSummary } from '@/types/recipe';
 
 type RecipeCardProps = {

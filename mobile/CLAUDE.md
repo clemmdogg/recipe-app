@@ -47,7 +47,7 @@ Run lint, type check and tests before considering a task done.
   - It returns `status` (`idle`/`loading`/`success`/`error`), `data`, `error` and `reload()`.
   - `data` is kept while reloading, so lists don't flash empty.
   - For results that change while the user types, pass `{ keepPreviousData: true }`. The previous key's data then stays visible while the new key loads.
-  - Feature hooks such as `use-recipe-browser.ts` and `use-recipe-details.ts` combine it with the API and `src/db/` functions. Screens stay thin.
+  - View models (`src/view-models/`, e.g. `use-recipe-browser.ts`) combine it with repository and service functions. Screens stay thin. See "Layers" below.
 - **Shared UI states**: `LoadingState`, `ErrorState` (with an optional retry) and `EmptyState` in `src/components/`.
 - **Detail screens** live inside their tab's folder, e.g. `src/app/(recipes)/recipe/[id].tsx` is `/recipe/[id]`. Link to them with the object form: `{ pathname: '/recipe/[id]', params: { id } }`.
 - **Don't wrap a `Pressable` that has a style function (`style={({ pressed }) => ...}`) in `<Link asChild>`.** Link merges the child's style as an object, so the function and all its layout styles (width, flex) are silently dropped. Navigate in `onPress` with `router.push(...)` instead.
@@ -143,7 +143,7 @@ The plan is to build this after the pantry and shopping list work locally. Check
 - Keep household data sync-ready (UUIDs, timestamps, soft deletes), as the data layer rules require.
 - Don't add `user_id` or `household_id` columns to local tables yet. How ownership is stored gets decided together with the backend.
 - Make changes per row, e.g. tick off one item or remove one entry. Don't rewrite whole lists, so edits from different family members can be merged.
-- Keep all data access in `src/db/` and `src/api/`, and open the database only in the root layout's `SQLiteProvider`. Then auth, the household database and sync can be added in one place.
+- Keep all data access in `src/repositories/` and `src/services/`, and open the database only in the root layout's `SQLiteProvider`. Then auth, the household database and sync can be added in one place.
 
 **Known issue to fix when building sync**
 
@@ -163,11 +163,43 @@ All app code lives under `src/` (import it via the `@/` alias). Only routes go i
 
 - `src/app/` – screens and routes (Expo Router)
 - `src/components/` – reusable UI components
-- `src/api/` – TheMealDB client
-- `src/db/` – all database access (schema, migrations, queries)
-- `src/hooks/` – custom hooks
+- `src/view-models/` – one hook per screen or feature (`use-pantry`, `use-week-plan`, ...)
+- `src/hooks/` – small general-purpose hooks (`use-theme`, `use-layout`, `use-async-resource`, ...)
+- `src/repositories/` – all SQL queries, one file per table or feature
+- `src/db/` – database setup only: `initialize`, `migrations/`, the `Database` type and `useDatabase()`
+- `src/services/` – talking to the outside world: TheMealDB client (later: own API, auth, sync)
 - `src/types/` – shared TypeScript types
+- `src/utils/` – pure functions (dates, ids, building the shopping list)
 - `src/constants/theme.ts` – colors, fonts and spacing
+
+### Layers
+
+The app is split into layers (View → ViewModel → Repository / Service). Each layer only calls the layer below it.
+
+Folders are **layer-first** (decided): one folder per layer, with feature subfolders only inside `components/`. This fits an app this size, makes the layers easy to show in the school report, and gives login and sync, which touch every feature, a natural home in `services/`. Reconsider feature-first folders only if a layer folder grows past ~15–20 files.
+
+| Layer | Folder | Does | May import |
+|---|---|---|---|
+| View | `src/app/`, `src/components/` | Draws UI, shows alerts, navigates | view models, `hooks/`, `constants/`, `utils/`, `types/` |
+| ViewModel | `src/view-models/` | Screen state and actions, loading via `useAsyncResource` | repositories, services, `useDatabase()`, other view models, `hooks/`, `utils/`, `types/` |
+| Repository | `src/repositories/` | Reads and writes the local SQLite database | `db/`, `utils/`, `types/` |
+| Service | `src/services/` | Network calls, maps responses to our types | `utils/`, `types/` |
+
+- **Views never import `repositories/` or `db/`.** If a screen needs data, give it a view model. The only exception is the root layout, which opens the database.
+- Exception: views may use pure URL helpers from services that don't fetch anything, such as `imageUrl()` and `ingredientImageUrl()`.
+- View models return plain data and functions. They don't show alerts or navigate. They throw, and the view decides what to show (see `use-add-to-plan.ts` and `AddToPlanScreen`).
+- Login and sync go in `services/` (e.g. `services/auth.ts`, `services/sync.ts`, a client for our own API). Sync reads and writes through repositories, so views don't change.
+
+### Loose coupling
+
+The student wants the code **loosely coupled**: each part knows as little as possible about how other parts work, so one part can change without breaking the others. In practice:
+
+- **Depend on what a layer offers, not how it does it.** A view model calls `getPantryItems(db)` and gets `PantryItem[]`. It never knows about tables, columns or SQL. A view gets plain data and functions from its view model and never knows where the data came from.
+- **Pass dependencies in instead of reaching for them.** Repository functions take the database as a parameter, typed against the small `Database` type in `src/db/types.ts`, not the concrete `SQLiteDatabase`. That is why the same code runs against `node:sqlite` in tests.
+- **Map outside data to our own types at the edge.** Services turn TheMealDB (and later our own API) responses into types from `src/types/` right away, so a change in an outside API only touches its service file.
+- **Shared types live in `src/types/`**, not in the layer that happens to create them.
+- **No hidden shared state.** Don't use module-level variables or singletons that several files read and write. State lives in a view model or in the database.
+- **Keep it simple.** Loose coupling here means clear boundaries and small interfaces, not extra machinery. Don't add dependency-injection containers, abstract base classes or interfaces with only one implementation "just in case".
 
 ## Code style
 
@@ -181,7 +213,7 @@ All app code lives under `src/` (import it via the `@/` alias). Only routes go i
 
 ## Data layer rules
 
-- Never write SQL inside components; always go through functions in `src/db/`
+- Never write SQL inside components or view models; always go through functions in `src/repositories/`
 - Use UUIDs as primary keys (no auto-increment), except recipes, which use `idMeal`
   - Rows with a natural key use a name-based UUID from `nameBasedUuid(IdNamespaces.x, key)` in `src/utils/ids.ts`, so the same row created on two devices merges on sync. Pantry items are keyed by their lowercased ingredient name.
   - Adding a row that was soft-deleted restores it: upsert on the id and clear `deleted_at`. Don't insert a new row.
@@ -202,7 +234,7 @@ All app code lives under `src/` (import it via the `@/` alias). Only routes go i
 
 How it is wired:
 
-- **Startup:** `SQLiteProvider` in `src/app/_layout.tsx` opens `recipes.db` and runs `initializeDatabase` (`src/db/initialize.ts`) before any screen renders. `initializeDatabase` turns on WAL and foreign keys, then runs pending migrations. Query functions take the database from `useSQLiteContext()` as a parameter.
+- **Startup:** `SQLiteProvider` in `src/app/_layout.tsx` opens `recipes.db` and runs `initializeDatabase` (`src/db/initialize.ts`) before any screen renders. `initializeDatabase` turns on WAL and foreign keys, then runs pending migrations. View models get it with `useDatabase()` (`src/db/use-database.ts`) and pass it to repository functions as a parameter. Only `use-database.ts` and the root layout import `expo-sqlite`.
 - **Migrations** live in `src/db/migrations/` (`001-initial.ts`, ...) and are listed in order in `src/db/migrations/index.ts`.
   - Versions must be 1, 2, 3, ..., and `PRAGMA user_version` stores the current one.
   - All pending migrations run in one transaction together with the version update.
@@ -235,7 +267,7 @@ The app runs on phones and tablets (`ios.supportsTablet`) in both portrait and l
 
 ## Testing
 
-- Write tests for all functions in `src/db/` and for non-trivial hooks
+- Write tests for all functions in `src/repositories/` and `src/services/`, and for non-trivial hooks and view models
 - Test behavior, not implementation details
 - Put tests in `src/__tests__/`
 - `jest-expo` replaces native modules with mocks, so native calls such as `expo-crypto`'s
@@ -284,7 +316,7 @@ clear labels, no clutter.
 ## TheMealDB
 
 - Base URL: `https://www.themealdb.com/api/json/v1/1/` (free test key `1`)
-- All API calls go through `src/api/mealdb.ts`; never call fetch from components
+- All TheMealDB calls go through `src/services/mealdb.ts`; never call fetch from components
 - Map API responses to our own types right away; the rest of the app
   never sees the raw API shape
 - Ingredients and measures come as `strIngredient1..20` / `strMeasure1..20`;

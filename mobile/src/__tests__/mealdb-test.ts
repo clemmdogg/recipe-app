@@ -12,7 +12,7 @@ import {
   imageUrl,
   MealDbError,
   searchRecipes,
-} from '@/api/mealdb';
+} from '@/services/mealdb';
 
 const fetchMock = jest.fn<Promise<Response>, Parameters<typeof fetch>>();
 

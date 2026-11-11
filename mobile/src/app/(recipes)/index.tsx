@@ -8,7 +8,7 @@ import { RecipeGrid } from '@/components/recipes/recipe-grid';
 import { SearchField } from '@/components/search-field';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { useRecipeBrowser, type BrowseMode } from '@/hooks/use-recipe-browser';
+import { useRecipeBrowser, type BrowseMode } from '@/view-models/use-recipe-browser';
 
 export default function RecipesScreen() {
   const browser = useRecipeBrowser();

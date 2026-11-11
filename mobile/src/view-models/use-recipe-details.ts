@@ -1,11 +1,11 @@
-import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 
-import { getRecipe } from '@/api/mealdb';
-import { getPlannedDates } from '@/db/meal-plan';
-import { getSavedRecipe, removeRecipe, saveRecipe } from '@/db/recipes';
+import { useDatabase } from '@/db/use-database';
 import { useAsyncResource } from '@/hooks/use-async-resource';
 import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
+import { getPlannedDates } from '@/repositories/meal-plan';
+import { getSavedRecipe, removeRecipe, saveRecipe } from '@/repositories/recipes';
+import { getRecipe } from '@/services/mealdb';
 import type { Recipe } from '@/types/recipe';
 import { toDateKey, type DateKey } from '@/utils/dates';
 
@@ -21,7 +21,7 @@ type LoadedRecipe = {
  * and lets the user save or remove it.
  */
 export function useRecipeDetails(id: string) {
-  const db = useSQLiteContext();
+  const db = useDatabase();
   const resource = useAsyncResource<LoadedRecipe>(`recipe:${id}`, async (signal) => {
     const plannedDates = await getPlannedDates(db, id, toDateKey(new Date()));
     const saved = await getSavedRecipe(db, id);

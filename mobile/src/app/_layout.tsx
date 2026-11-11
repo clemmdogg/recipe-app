@@ -9,7 +9,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      {/* Runs migrations before rendering; screens get the database via useSQLiteContext(). */}
+      {/* Runs migrations before rendering; view models get the database via useDatabase(). */}
       <SQLiteProvider databaseName={DatabaseName} onInit={initializeDatabase}>
         <AppTabs />
       </SQLiteProvider>

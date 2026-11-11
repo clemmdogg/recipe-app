@@ -7,8 +7,8 @@ import { WeekHeader } from '@/components/plan/week-header';
 import { SearchField } from '@/components/search-field';
 import { ShoppingListContent } from '@/components/shopping/shopping-list-content';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useShoppingList } from '@/hooks/use-shopping-list';
 import { useTheme } from '@/hooks/use-theme';
+import { useShoppingList } from '@/view-models/use-shopping-list';
 
 /** From this width "In cart" and "Already at home" move to a column beside "To buy". */
 const TwoColumnMinWidth = 900;

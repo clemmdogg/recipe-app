@@ -1,7 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,35 +10,25 @@ import { RecipeRow } from '@/components/plan/recipe-row';
 import { PrimaryButton } from '@/components/primary-button';
 import { SearchField } from '@/components/search-field';
 import { Spacing } from '@/constants/theme';
-import { addToPlan } from '@/db/meal-plan';
-import { getSavedRecipes } from '@/db/recipes';
-import { useAsyncResource } from '@/hooks/use-async-resource';
 import { useTheme } from '@/hooks/use-theme';
 import { formatRelativeDay, fromDateKey, type DateKey } from '@/utils/dates';
+import { useAddDinner } from '@/view-models/use-add-dinner';
 
 /** Modal for choosing a saved recipe to cook on `date`. */
 export function AddDinnerScreen({ date }: { date: DateKey }) {
-  const db = useSQLiteContext();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const saved = useAsyncResource('saved', () => getSavedRecipes(db));
-  const [filter, setFilter] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const { saved, filter, setFilter, isFiltering, hasSavedRecipes, recipes, isAdding, add } =
+    useAddDinner(date);
 
   const dayLabel = formatRelativeDay(fromDateKey(date), new Date());
-  const needle = filter.trim().toLowerCase();
-  const recipes = (saved.data ?? []).filter((recipe) => recipe.name.toLowerCase().includes(needle));
 
   const onPick = async (recipeId: string) => {
-    if (isAdding) {
-      return;
-    }
-    setIsAdding(true);
     try {
-      await addToPlan(db, recipeId, date);
-      router.back();
+      if (await add(recipeId)) {
+        router.back();
+      }
     } catch {
-      setIsAdding(false);
       Alert.alert('Could not add to your plan', 'Please try again.');
     }
   };
@@ -53,7 +41,7 @@ export function AddDinnerScreen({ date }: { date: DateKey }) {
   let empty = <LoadingState />;
   if (saved.status === 'error') {
     empty = <ErrorState message="Could not load your saved recipes." onRetry={saved.reload} />;
-  } else if (saved.status === 'success' && needle !== '') {
+  } else if (saved.status === 'success' && isFiltering) {
     empty = (
       <EmptyState
         icon={{ sf: 'magnifyingglass', md: 'search' }}
@@ -85,7 +73,7 @@ export function AddDinnerScreen({ date }: { date: DateKey }) {
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={[styles.content, { paddingBottom: Spacing.four + insets.bottom }]}
         ListHeaderComponent={
-          (saved.data ?? []).length > 0 ? (
+          hasSavedRecipes ? (
             <SearchField
               value={filter}
               onChangeText={setFilter}

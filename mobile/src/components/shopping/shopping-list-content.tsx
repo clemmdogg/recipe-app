@@ -9,7 +9,7 @@ import { AtHomeSection } from '@/components/shopping/at-home-section';
 import { LineSection } from '@/components/shopping/line-section';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import type { AsyncResource } from '@/hooks/use-async-resource';
-import type { ShoppingLine, ShoppingList } from '@/utils/shopping-list';
+import type { ShoppingLine, ShoppingList } from '@/types/shopping-list';
 
 type ShoppingListContentProps = {
   list: AsyncResource<ShoppingList>;

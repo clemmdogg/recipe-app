@@ -27,6 +27,8 @@ Before writing any API code:
 1. Settle what is "Not decided yet" there: the API framework and libraries, and how to run Postgres locally. Docker isn't installed on the development machine.
 2. Write an **API design document** in `api/`: every endpoint with its method, path, request and response bodies, status codes and access rules, plus how SSL and authentication work. The student reviews it before anything is built, and it doubles as material for the school report.
 
+The API follows the same **loose coupling** principle as the app (see "Loose coupling" in `mobile/CLAUDE.md`): routes, business logic and database access in separate layers that talk through small, typed functions.
+
 When the API exists, add its commands, structure and rules to this file.
 
 ## Working with the student

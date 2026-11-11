@@ -12,8 +12,8 @@ import { QuickAdd } from '@/components/pantry/quick-add';
 import { SearchField } from '@/components/search-field';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { usePantry } from '@/hooks/use-pantry';
 import { useTheme } from '@/hooks/use-theme';
+import { usePantry } from '@/view-models/use-pantry';
 
 /** Item columns by list width: one on phones, more on tablets and in landscape. */
 function columnCount(width: number): number {

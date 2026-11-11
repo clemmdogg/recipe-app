@@ -1,9 +1,9 @@
 import { createTestDatabase } from '../../jest/node-sqlite-database';
 
 import { initializeDatabase } from '@/db/initialize';
-import { addToPlan } from '@/db/meal-plan';
-import { addToPantry, getPantryItems } from '@/db/pantry';
-import { saveRecipe } from '@/db/recipes';
+import { addToPlan } from '@/repositories/meal-plan';
+import { addToPantry, getPantryItems } from '@/repositories/pantry';
+import { saveRecipe } from '@/repositories/recipes';
 import {
   addShoppingItem,
   checkShoppingItem,
@@ -12,7 +12,7 @@ import {
   markCartBought,
   removeShoppingItem,
   uncheckShoppingItem,
-} from '@/db/shopping-list';
+} from '@/repositories/shopping-list';
 import type { Recipe } from '@/types/recipe';
 
 const week = '2026-11-09';

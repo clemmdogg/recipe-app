@@ -1,22 +1,14 @@
-import { useSQLiteContext } from 'expo-sqlite';
-
-import { getPlan, removeFromPlan } from '@/db/meal-plan';
+import { useDatabase } from '@/db/use-database';
 import { useAsyncResource } from '@/hooks/use-async-resource';
 import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
-import { useWeekNavigation } from '@/hooks/use-week-navigation';
-import type { MealPlanEntry } from '@/types/meal-plan';
-import { daysOfWeek, toDateKey, type DateKey } from '@/utils/dates';
-
-export type PlanDay = {
-  date: Date;
-  key: DateKey;
-  isToday: boolean;
-  entries: MealPlanEntry[];
-};
+import { getPlan, removeFromPlan } from '@/repositories/meal-plan';
+import type { PlanDay } from '@/types/meal-plan';
+import { daysOfWeek, toDateKey } from '@/utils/dates';
+import { useWeekNavigation } from '@/view-models/use-week-navigation';
 
 /** The meal plan for one week at a time, starting with the current week. */
 export function useWeekPlan() {
-  const db = useSQLiteContext();
+  const db = useDatabase();
   const week = useWeekNavigation();
   const { startKey, endKey } = week;
   const plan = useAsyncResource(`plan:${startKey}`, () => getPlan(db, startKey, endKey));

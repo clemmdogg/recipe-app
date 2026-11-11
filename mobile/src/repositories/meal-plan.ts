@@ -1,7 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 
-import { isRecipeSaved, saveRecipe } from '@/db/recipes';
 import type { Database } from '@/db/types';
+import { isRecipeSaved, saveRecipe } from '@/repositories/recipes';
 import type { MealPlanEntry } from '@/types/meal-plan';
 import type { Recipe } from '@/types/recipe';
 import type { DateKey } from '@/utils/dates';

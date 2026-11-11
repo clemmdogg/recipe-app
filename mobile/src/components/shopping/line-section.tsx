@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { ShoppingLineRow } from '@/components/shopping/shopping-line-row';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import type { ShoppingLine } from '@/utils/shopping-list';
+import type { ShoppingLine } from '@/types/shopping-list';
 
 type LineSectionProps = {
   title: string;

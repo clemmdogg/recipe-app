@@ -7,7 +7,7 @@ import {
   isRecipeSaved,
   removeRecipe,
   saveRecipe,
-} from '@/db/recipes';
+} from '@/repositories/recipes';
 import type { Recipe } from '@/types/recipe';
 
 const pasta: Recipe = {

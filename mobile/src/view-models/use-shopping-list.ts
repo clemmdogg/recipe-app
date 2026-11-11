@@ -1,8 +1,10 @@
-import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 
-import { searchIngredients } from '@/db/ingredients';
-import { getPantryItems } from '@/db/pantry';
+import { useDatabase } from '@/db/use-database';
+import { useAsyncResource } from '@/hooks/use-async-resource';
+import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
+import { searchIngredients } from '@/repositories/ingredients';
+import { getPantryItems } from '@/repositories/pantry';
 import {
   addShoppingItem,
   checkShoppingItem,
@@ -11,16 +13,15 @@ import {
   markCartBought,
   removeShoppingItem,
   uncheckShoppingItem,
-} from '@/db/shopping-list';
-import { useAsyncResource } from '@/hooks/use-async-resource';
-import { useIngredientCatalog } from '@/hooks/use-ingredient-catalog';
-import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
-import { useWeekNavigation } from '@/hooks/use-week-navigation';
-import { buildShoppingList, ingredientKey, type ShoppingLine } from '@/utils/shopping-list';
+} from '@/repositories/shopping-list';
+import type { ShoppingLine } from '@/types/shopping-list';
+import { buildShoppingList, ingredientKey } from '@/utils/shopping-list';
+import { useIngredientCatalog } from '@/view-models/use-ingredient-catalog';
+import { useWeekNavigation } from '@/view-models/use-week-navigation';
 
 /** The shopping list for one week at a time, derived from the plan and the pantry. */
 export function useShoppingList() {
-  const db = useSQLiteContext();
+  const db = useDatabase();
   const week = useWeekNavigation();
   const { startKey, endKey } = week;
   const [query, setQuery] = useState('');

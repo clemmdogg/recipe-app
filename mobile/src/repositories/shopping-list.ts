@@ -1,8 +1,8 @@
-import { addToPantry } from '@/db/pantry';
-import { shoppingItemId, shoppingListId, softDeleteItem, upsertItem } from '@/db/shopping-list-rows';
 import type { Database } from '@/db/types';
+import { addToPantry } from '@/repositories/pantry';
+import { shoppingItemId, shoppingListId, softDeleteItem, upsertItem } from '@/repositories/shopping-list-rows';
+import type { PlannedIngredient, StoredShoppingItem } from '@/types/shopping-list';
 import type { DateKey } from '@/utils/dates';
-import type { PlannedIngredient, StoredShoppingItem } from '@/utils/shopping-list';
 
 /*
  * A week's shopping list is derived from the meal plan and the pantry (see buildShoppingList).

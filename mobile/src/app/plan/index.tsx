@@ -9,7 +9,7 @@ import { PlanDayCard } from '@/components/plan/plan-day-card';
 import { WeekHeader } from '@/components/plan/week-header';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { useWeekPlan } from '@/hooks/use-week-plan';
+import { useWeekPlan } from '@/view-models/use-week-plan';
 
 /** From this width the seven days are shown side by side instead of stacked. */
 const WeekColumnsMinWidth = 1000;

@@ -3,13 +3,13 @@ import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { imageUrl } from '@/api/mealdb';
 import { LinkButton } from '@/components/link-button';
 import { IngredientList } from '@/components/recipes/ingredient-list';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
+import { imageUrl } from '@/services/mealdb';
 import type { Recipe } from '@/types/recipe';
 
 type RecipeDetailsProps = {

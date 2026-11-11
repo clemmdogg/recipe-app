@@ -1,8 +1,7 @@
-import { useSQLiteContext } from 'expo-sqlite';
-
-import { getIngredients } from '@/api/mealdb';
-import { getIngredientCatalogUpdatedAt, replaceIngredientCatalog } from '@/db/ingredients';
+import { useDatabase } from '@/db/use-database';
 import { useAsyncResource } from '@/hooks/use-async-resource';
+import { getIngredientCatalogUpdatedAt, replaceIngredientCatalog } from '@/repositories/ingredients';
+import { getIngredients } from '@/services/mealdb';
 
 const MaxCatalogAgeMs = 30 * 24 * 60 * 60 * 1000;
 
@@ -11,7 +10,7 @@ const MaxCatalogAgeMs = 30 * 24 * 60 * 60 * 1000;
  * and refreshes it when it's older than 30 days. Offline, an existing copy is used as is.
  */
 export function useIngredientCatalog() {
-  const db = useSQLiteContext();
+  const db = useDatabase();
   const catalog = useAsyncResource('ingredient-catalog', async (signal) => {
     const updatedAt = await getIngredientCatalogUpdatedAt(db);
     if (updatedAt && Date.now() - updatedAt.getTime() < MaxCatalogAgeMs) {

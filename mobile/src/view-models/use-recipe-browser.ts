@@ -1,11 +1,11 @@
-import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 
-import { getCategories, getRecipesByCategory, searchRecipes } from '@/api/mealdb';
-import { getSavedRecipes } from '@/db/recipes';
+import { useDatabase } from '@/db/use-database';
 import { useAsyncResource, type AsyncResource } from '@/hooks/use-async-resource';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
+import { getSavedRecipes } from '@/repositories/recipes';
+import { getCategories, getRecipesByCategory, searchRecipes } from '@/services/mealdb';
 import type { RecipeSummary } from '@/types/recipe';
 
 const SearchDelayMs = 400;
@@ -17,7 +17,7 @@ export type BrowseMode =
   | { kind: 'search'; query: string };
 
 export function useRecipeBrowser() {
-  const db = useSQLiteContext();
+  const db = useDatabase();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string | null>(null);
 

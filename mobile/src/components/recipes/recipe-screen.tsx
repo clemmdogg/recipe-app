@@ -7,7 +7,7 @@ import { LoadingState } from '@/components/loading-state';
 import { HeartIcon } from '@/components/recipes/heart-icon';
 import { RecipeActions } from '@/components/recipes/recipe-actions';
 import { RecipeDetails } from '@/components/recipes/recipe-details';
-import { useRecipeDetails } from '@/hooks/use-recipe-details';
+import { useRecipeDetails } from '@/view-models/use-recipe-details';
 
 type RecipeScreenProps = {
   id: string;

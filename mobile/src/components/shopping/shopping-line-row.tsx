@@ -5,8 +5,8 @@ import { IngredientRow } from '@/components/pantry/ingredient-row';
 import { FilledSymbolWeight } from '@/constants/symbols';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import type { ShoppingLine } from '@/types/shopping-list';
 import { formatWeekday, fromDateKey } from '@/utils/dates';
-import type { ShoppingLine } from '@/utils/shopping-list';
 
 type ShoppingLineRowProps = {
   line: ShoppingLine;

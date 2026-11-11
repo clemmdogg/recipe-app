@@ -1,8 +1,8 @@
 import { createTestDatabase } from '../../jest/node-sqlite-database';
 
 import { initializeDatabase } from '@/db/initialize';
-import { addToPlan, getPlan, getPlannedDates, planRecipe, removeFromPlan } from '@/db/meal-plan';
-import { isRecipeSaved, removeRecipe, saveRecipe } from '@/db/recipes';
+import { addToPlan, getPlan, getPlannedDates, planRecipe, removeFromPlan } from '@/repositories/meal-plan';
+import { isRecipeSaved, removeRecipe, saveRecipe } from '@/repositories/recipes';
 import type { Recipe } from '@/types/recipe';
 
 const recipe = (id: string, name: string): Recipe => ({

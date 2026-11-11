@@ -5,8 +5,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { RecipeRow } from '@/components/plan/recipe-row';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import type { PlanDay } from '@/hooks/use-week-plan';
 import { useTheme } from '@/hooks/use-theme';
+import type { PlanDay } from '@/types/meal-plan';
 import { formatDayMonth, formatWeekday } from '@/utils/dates';
 
 type PlanDayCardProps = {

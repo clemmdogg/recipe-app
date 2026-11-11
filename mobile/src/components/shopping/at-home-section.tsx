@@ -7,7 +7,7 @@ import { describeUses } from '@/components/shopping/shopping-line-row';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { ShoppingLine } from '@/utils/shopping-list';
+import type { ShoppingLine } from '@/types/shopping-list';
 
 type AtHomeSectionProps = {
   lines: ShoppingLine[];

@@ -1,7 +1,5 @@
 import { router } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,38 +7,22 @@ import { ErrorState } from '@/components/error-state';
 import { LoadingState } from '@/components/loading-state';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { getPlan, planRecipe } from '@/db/meal-plan';
-import { useAsyncResource } from '@/hooks/use-async-resource';
-import { useRecipeDetails } from '@/hooks/use-recipe-details';
 import { useTheme } from '@/hooks/use-theme';
-import { addDays, formatRelativeDay, toDateKey } from '@/utils/dates';
-
-const DaysAhead = 14;
+import { formatRelativeDay, toDateKey } from '@/utils/dates';
+import { useAddToPlan } from '@/view-models/use-add-to-plan';
 
 /** Modal for choosing which day to cook a recipe. Saves the recipe if it isn't saved yet. */
 export function AddToPlanScreen({ id }: { id: string }) {
-  const db = useSQLiteContext();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { recipe, status, error, reload } = useRecipeDetails(id);
-  const [isAdding, setIsAdding] = useState(false);
-
-  const today = new Date();
-  const days = Array.from({ length: DaysAhead }, (_, index) => addDays(today, index));
-  const startKey = toDateKey(days[0]);
-  const endKey = toDateKey(days[days.length - 1]);
-  const plan = useAsyncResource(`plan:${startKey}:${endKey}`, () => getPlan(db, startKey, endKey));
+  const { recipe, status, error, reload, today, days, dinnerCount, isAdding, add } = useAddToPlan(id);
 
   const onPickDay = async (date: Date) => {
-    if (!recipe || isAdding) {
-      return;
-    }
-    setIsAdding(true);
     try {
-      await planRecipe(db, recipe, toDateKey(date));
-      router.back();
+      if (await add(date)) {
+        router.back();
+      }
     } catch {
-      setIsAdding(false);
       Alert.alert('Could not add to your plan', 'Please try again.');
     }
   };
@@ -65,8 +47,7 @@ export function AddToPlanScreen({ id }: { id: string }) {
         </ThemedText>
       }
       renderItem={({ item: date }) => {
-        const key = toDateKey(date);
-        const count = (plan.data ?? []).filter((entry) => entry.date === key).length;
+        const count = dinnerCount(date);
         const label = formatRelativeDay(date, today);
         const detail = count === 0 ? 'Nothing planned' : `${count} dinner${count === 1 ? '' : 's'} planned`;
         return (

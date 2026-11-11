@@ -1,6 +1,6 @@
 # TheMealDB API
 
-Notes on the parts of [TheMealDB](https://www.themealdb.com/api.php) this app uses. The client is `src/api/mealdb.ts`.
+Notes on the parts of [TheMealDB](https://www.themealdb.com/api.php) this app uses. The client is `src/services/mealdb.ts`.
 
 Real responses used as test fixtures are in `jest/fixtures/`.
 
@@ -51,7 +51,7 @@ Supporter-only (v2 API): multi-ingredient filter, latest meals, random selection
 
 ## Images
 
-Append a size to a meal image URL to get a smaller version: `/small`, `/medium` or `/large`. Use `imageUrl()` in `src/api/mealdb.ts`.
+Append a size to a meal image URL to get a smaller version: `/small`, `/medium` or `/large`. Use `imageUrl()` in `src/services/mealdb.ts`.
 
 | Suffix | Approx. size (Nov 2026 test) | Used for |
 |---|---|---|

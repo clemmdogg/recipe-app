@@ -1,4 +1,5 @@
-import { buildShoppingList, type PlannedIngredient } from '@/utils/shopping-list';
+import type { PlannedIngredient } from '@/types/shopping-list';
+import { buildShoppingList } from '@/utils/shopping-list';
 
 const pastaMonday: PlannedIngredient[] = [
   { date: '2026-11-09', recipeName: 'Pasta', name: 'Garlic', measure: '3 cloves' },

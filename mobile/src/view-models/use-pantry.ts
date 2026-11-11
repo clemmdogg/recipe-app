@@ -1,16 +1,16 @@
-import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 
 import { PantryStaples } from '@/constants/pantry';
-import { searchIngredients } from '@/db/ingredients';
-import { addToPantry, getPantryItems, removeFromPantry } from '@/db/pantry';
+import { useDatabase } from '@/db/use-database';
 import { useAsyncResource } from '@/hooks/use-async-resource';
-import { useIngredientCatalog } from '@/hooks/use-ingredient-catalog';
 import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
+import { searchIngredients } from '@/repositories/ingredients';
+import { addToPantry, getPantryItems, removeFromPantry } from '@/repositories/pantry';
+import { useIngredientCatalog } from '@/view-models/use-ingredient-catalog';
 
 /** Pantry items, ingredient suggestions while typing, and adding/removing items. */
 export function usePantry() {
-  const db = useSQLiteContext();
+  const db = useDatabase();
   const [query, setQuery] = useState('');
   const catalog = useIngredientCatalog();
 
