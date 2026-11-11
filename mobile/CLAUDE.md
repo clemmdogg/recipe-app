@@ -40,6 +40,13 @@ Run lint, type check and tests before considering a task done.
   - **View models that show household data call `useReloadOnSync(reload)`** next to `useReloadOnRefocus(reload)`, so they reload when a sync brings in others' changes.
   - `useSync()` gives `status` (`idle`/`syncing`/`offline`/`error`), `lastSyncedAt` and `sync()`.
   - The app has its own types for the API's sync data (`src/types/sync.ts`), mirroring `api/src/types/sync.ts`. Change both together.
+  - **Each sync first asks the server for the user's household** (`GET /v1/me`), because the user may have joined another one on another device or been removed. A changed household is saved in the session.
+- **Which household the local data belongs to** is stored in `sync_state` (`src/repositories/local-data.ts`). `syncNow(db, client, householdId)` checks it first:
+  - Same household: sync as usual.
+  - Another household: delete the local data, then pull the new household's. Never upload it.
+  - None (data from before login): keep it and upload it, as the student decided.
+  - Signing out and deleting the account clear the local data with `clearHouseholdData()`, which leaves a "cleared" marker. Anything written afterwards, e.g. by a sync still running, is deleted at the next sign-in instead of uploaded.
+- **Switching household** (join, leave) first calls `useSync().uploadEverything()` and refuses with `NotUploadedError` if something couldn't be uploaded, so nothing is lost or uploaded to the wrong household. Then it calls the API, saves the new household in the session, and syncs.
 - **Tabs**: Each tab is a folder in `src/app/(app)/` with its own `_layout.tsx` (a `Stack`) and `index.tsx`. The `(app)` group doesn't change URLs. Detail screens for a tab go in the same folder.
   - Recipes is the `(recipes)` route group, so its `index.tsx` is the app's start route `/`. Plan, List and Pantry are at `/plan`, `/list` and `/pantry`.
   - The tab bar is defined once in `src/constants/tabs.ts` (`TabRoutes`: route name, href, label, SF Symbol and Material icon). Add or change tabs there, not in the tab bar components.
@@ -109,7 +116,7 @@ The plan is to build this after the pantry and shopping list work locally. Check
 - **Deleting an account:** users can delete their account in the Household tab. It needs their password. If they were the last member, the household and its data are deleted too.
 - **The Household tab** (`src/app/(app)/household/`) is where the household is managed: name, members, invite, join with code, leave, and sign out.
   - It is the 5th and last tab, because Android allows at most 5. Account and future settings go here too.
-  - Until step 4 of connecting the app, it is a placeholder that shows who is signed in and can sign out.
+  - The invite code is always shown on screen in a card (`InviteCard`), because the share sheet on Android lists only apps and hides the message.
 
 **Decided: backend and login**
 
@@ -176,9 +183,9 @@ The plan is to build this after the pantry and shopping list work locally. Check
 The plan, approved by the student, in five steps, each tested on the phone and committed separately:
 
 1. ~~Local database ready for sync~~ Done: migration 003 (`change_number`, `needs_push`, triggers, `sync_state`) and name-based recipe ingredient ids.
-2. Login: `expo-secure-store` for tokens, `services/api-client.ts` (refreshes on `token_expired`), `services/auth.ts`, sign-in and sign-up screens, all other screens behind login. The API URL is `EXPO_PUBLIC_API_URL` in `mobile/.env` (the computer's Wi-Fi IP while developing).
-3. Sync: `services/sync.ts` pushes rows with `needs_push = 1`, then pulls all pages and applies them in one transaction, then refreshes screens. Runs on app start, on returning to the app, and a few seconds after a change. A pulled row doesn't overwrite a local row that still needs pushing; a row rejected as `deleted_on_server` is deleted locally.
-4. The Household tab: name, members, invite (share sheet), join with code (with data loss warning), leave, remove member, sign out (warns about unsynced changes), delete account, sync status. Switching household empties the local data and pulls the new household's.
+2. ~~Login~~ Done: `expo-secure-store` for tokens, `services/api-client.ts` (refreshes on `token_expired`), `services/auth.ts`, sign-in and sign-up screens, all other screens behind login. The API URL is `EXPO_PUBLIC_API_URL` in `mobile/.env.local` (the computer's Wi-Fi IP while developing).
+3. ~~Sync~~ Done: `services/sync.ts` pushes rows with `needs_push = 1`, then pulls all pages and applies them in one transaction, then refreshes screens. Runs on app start, on returning to the app, and a few seconds after a change. A pulled row doesn't overwrite a local row that still needs pushing; a row rejected as `deleted_on_server` is deleted locally.
+4. ~~The Household tab~~ Done: name, members, invite (share sheet), join with code (with data loss warning), leave, remove member, sign out (warns about unsynced changes), delete account, sync status. Switching household empties the local data and pulls the new household's.
 5. Optional: remove the web code.
 
 - **Data from before login is uploaded** to the household on the first sync (the student's choice). Migration 003 marks all existing rows `needs_push = 1`.

@@ -1,8 +1,11 @@
 import { createContext, use, useEffect, useState, type ReactNode } from 'react';
 
+import { useDatabase } from '@/db/use-database';
+import { clearHouseholdData } from '@/repositories/local-data';
 import { createApiClient, type ApiClient } from '@/services/api-client';
 import { createSecureAuthStorage, type AuthStorage } from '@/services/auth-storage';
 import { restoreSession, signIn, signOut, signUp } from '@/services/auth';
+import { deleteAccount } from '@/services/household';
 import type { Session } from '@/types/session';
 
 type SessionContextValue = {
@@ -14,7 +17,12 @@ type SessionContextValue = {
   client: ApiClient;
   signIn(input: { email: string; password: string }): Promise<void>;
   signUp(input: { email: string; password: string; name: string }): Promise<void>;
+  /** Signs out and deletes the household data from this device. Warn about unsynced changes first. */
   signOut(): Promise<void>;
+  /** Deletes the account on the server, then signs out like `signOut`. */
+  deleteAccount(password: string): Promise<void>;
+  /** After joining, leaving or being removed: remember the user's new household. */
+  updateHousehold(household: Session['household']): Promise<void>;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -24,6 +32,7 @@ const SessionContext = createContext<SessionContextValue | null>(null);
  * is null and the tabs once it isn't.
  */
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const db = useDatabase();
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [storage] = useState<AuthStorage>(createSecureAuthStorage);
@@ -59,7 +68,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     signUp: async (input) => setSession(await signUp(client, storage, input)),
     signOut: async () => {
       await signOut(client, storage);
+      await clearHouseholdData(db);
       setSession(null);
+    },
+    deleteAccount: async (password) => {
+      await deleteAccount(client, password);
+      await storage.clear();
+      await clearHouseholdData(db);
+      setSession(null);
+    },
+    updateHousehold: async (household) => {
+      if (!session) {
+        return;
+      }
+      const updated = { ...session, household };
+      await storage.setSession(updated);
+      setSession(updated);
     },
   };
 

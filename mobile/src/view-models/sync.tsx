@@ -12,6 +12,7 @@ import { AppState } from 'react-native';
 import { useDatabase } from '@/db/use-database';
 import { hasRowsToPush } from '@/repositories/sync';
 import { NetworkError } from '@/services/api-client';
+import { getAccount } from '@/services/household';
 import { syncNow } from '@/services/sync';
 import { useSession } from '@/view-models/session';
 
@@ -33,6 +34,8 @@ type SyncContextValue = {
   dataVersion: number;
   /** Syncs now, unless a sync is already running. */
   sync(): Promise<void>;
+  /** Syncs, then tells whether all of this device's changes are uploaded (false when offline). */
+  uploadEverything(): Promise<boolean>;
 };
 
 const SyncContext = createContext<SyncContextValue | null>(null);
@@ -44,7 +47,7 @@ const SyncContext = createContext<SyncContextValue | null>(null);
  */
 export function SyncProvider({ children }: { children: ReactNode }) {
   const db = useDatabase();
-  const { client } = useSession();
+  const { client, session, updateHousehold } = useSession();
   const [status, setStatus] = useState<SyncStatus>({ state: 'idle' });
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
@@ -57,11 +60,23 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return running.current;
   }
 
+  async function uploadEverything(): Promise<boolean> {
+    await sync();
+    return !(await hasRowsToPush(db));
+  }
+
   async function runSync(): Promise<void> {
     setStatus({ state: 'syncing' });
     try {
-      const result = await syncNow(db, client);
-      if (result.pulled > 0) {
+      // Ask the server which household the user is in now: they may have joined another one on
+      // another device, or been removed. syncNow then replaces the local data if it changed.
+      const account = await getAccount(client);
+      const household = account.household;
+      if (household.id !== session?.household.id || household.name !== session.household.name) {
+        await updateHousehold(household);
+      }
+      const result = await syncNow(db, client, household.id);
+      if (result.pulled > 0 || result.switchedHousehold) {
         setDataVersion((version) => version + 1);
       }
       setLastSyncedAt(new Date());
@@ -109,7 +124,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     };
   }, [db]);
 
-  return <SyncContext value={{ status, lastSyncedAt, dataVersion, sync }}>{children}</SyncContext>;
+  return (
+    <SyncContext value={{ status, lastSyncedAt, dataVersion, sync, uploadEverything }}>
+      {children}
+    </SyncContext>
+  );
 }
 
 export function useSync(): SyncContextValue {

@@ -1,6 +1,7 @@
 import { createTestDatabase } from '../../jest/node-sqlite-database';
 
 import { initializeDatabase } from '@/db/initialize';
+import { clearHouseholdData } from '@/repositories/local-data';
 import { addToPantry, getPantryItems } from '@/repositories/pantry';
 import { getCursor, hasRowsToPush } from '@/repositories/sync';
 import { NetworkError, type ApiClient } from '@/services/api-client';
@@ -57,7 +58,7 @@ describe('syncNow', () => {
     await addToPantry(db, 'Salt');
     const { client, requests } = fakeServer({ push: () => ({ applied: 1, rejected: [] }) });
 
-    await expect(syncNow(db, client)).resolves.toEqual({ pushed: 1, pulled: 0 });
+    await expect(syncNow(db, client, 'household-1')).resolves.toEqual({ pushed: 1, pulled: 0, switchedHousehold: false });
 
     expect(requests.map(({ method, path }) => `${method} ${path}`)).toEqual([
       'POST /v1/changes',
@@ -74,7 +75,7 @@ describe('syncNow', () => {
       pages: [page(7, true, [pantryRow('garlic', 'Garlic', 7)]), page(9, false, [pantryRow('onion', 'Onion', 9)])],
     });
 
-    await expect(syncNow(db, client)).resolves.toEqual({ pushed: 0, pulled: 2 });
+    await expect(syncNow(db, client, 'household-1')).resolves.toEqual({ pushed: 0, pulled: 2, switchedHousehold: false });
 
     expect(requests.map(({ path }) => path)).toEqual([
       '/v1/changes?since=0&limit=500',
@@ -91,10 +92,46 @@ describe('syncNow', () => {
       push: () => ({ applied: 0, rejected: [{ table: 'pantryItems', id: milk!.id, reason: 'deleted_on_server' }] }),
     });
 
-    await syncNow(db, client);
+    await syncNow(db, client, 'household-1');
 
     expect(await getPantryItems(db)).toEqual([]);
     expect(await hasRowsToPush(db)).toBe(false);
+  });
+
+  it('uploads data from before login to the first household', async () => {
+    await addToPantry(db, 'Salt');
+    const { client, requests } = fakeServer({ push: () => ({ applied: 1, rejected: [] }) });
+
+    const result = await syncNow(db, client, 'household-1');
+
+    expect(result.switchedHousehold).toBe(false);
+    expect(requests[0]!.method).toBe('POST');
+  });
+
+  it("replaces another household's data instead of uploading it", async () => {
+    const { client } = fakeServer({ push: () => ({ applied: 1, rejected: [] }) });
+    await syncNow(db, client, 'old-household');
+    await addToPantry(db, 'Salt');
+
+    const { client: newClient, requests } = fakeServer({ pages: [page(3, false, [pantryRow('garlic', 'Garlic', 3)])] });
+    const result = await syncNow(db, newClient, 'new-household');
+
+    expect(result.switchedHousehold).toBe(true);
+    expect(requests.map(({ method }) => method)).toEqual(['GET']);
+    expect((await getPantryItems(db)).map((item) => item.name)).toEqual(['Garlic']);
+    expect(await getCursor(db)).toBe(3);
+  });
+
+  it('never uploads data that appears after signing out', async () => {
+    await clearHouseholdData(db);
+    // e.g. written by a sync that was still running when the user signed out.
+    await addToPantry(db, 'Salt');
+    const { client, requests } = fakeServer({});
+
+    await syncNow(db, client, 'next-users-household');
+
+    expect(requests.map(({ method }) => method)).toEqual(['GET']);
+    expect(await getPantryItems(db)).toEqual([]);
   });
 
   it('keeps local changes for later when offline', async () => {
@@ -105,7 +142,7 @@ describe('syncNow', () => {
       },
     };
 
-    await expect(syncNow(db, client)).rejects.toBeInstanceOf(NetworkError);
+    await expect(syncNow(db, client, 'household-1')).rejects.toBeInstanceOf(NetworkError);
 
     expect(await hasRowsToPush(db)).toBe(true);
   });

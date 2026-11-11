@@ -1,4 +1,5 @@
 import type { Database } from '@/db/types';
+import { clearHouseholdData, getLocalHouseholdId, setLocalHouseholdId } from '@/repositories/local-data';
 import {
   acceptServerDelete,
   applyPulledRows,
@@ -18,18 +19,39 @@ const PullPageSize = 500;
 
 export type SyncResult = {
   pushed: number;
-  /** Rows from other devices saved here. Screens reload when this is above 0. */
+  /** Rows from other devices saved here. */
   pulled: number;
+  /** The local data belonged to another household and was replaced. */
+  switchedHousehold: boolean;
 };
 
 /**
- * Brings this device and the server in step: first uploads this device's changes, then downloads
- * everyone else's. Throws `NetworkError` when offline; nothing is lost, it simply runs again later.
+ * Brings this device and the server in step for `householdId`, the user's household right now:
+ * first uploads this device's changes, then downloads everyone else's. Throws `NetworkError` when
+ * offline; nothing is lost, it simply runs again later.
  */
-export async function syncNow(db: Database, client: ApiClient): Promise<SyncResult> {
+export async function syncNow(db: Database, client: ApiClient, householdId: string): Promise<SyncResult> {
+  const switchedHousehold = await adoptHousehold(db, householdId);
   const pushed = await pushChanges(db, client);
   const pulled = await pullChanges(db, client);
-  return { pushed, pulled };
+  return { pushed, pulled, switchedHousehold };
+}
+
+/**
+ * Makes sure the local data is `householdId`'s. Data of another household (the user joined, left
+ * or was removed) is deleted first, so it is never uploaded to the wrong household. Data from
+ * before login has no household yet and is kept, so it gets uploaded.
+ */
+async function adoptHousehold(db: Database, householdId: string): Promise<boolean> {
+  const current = await getLocalHouseholdId(db);
+  if (current === householdId) {
+    return false;
+  }
+  if (current !== null) {
+    await clearHouseholdData(db);
+  }
+  await setLocalHouseholdId(db, householdId);
+  return current !== null;
 }
 
 async function pushChanges(db: Database, client: ApiClient): Promise<number> {
