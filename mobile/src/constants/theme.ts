@@ -16,6 +16,8 @@ export const Colors = {
     textSecondary: '#60646C',
     /** Saved-recipe heart. */
     favorite: '#DC3E42',
+    /** Error messages, e.g. a wrong password. */
+    error: '#CE2C31',
   },
   dark: {
     text: '#ffffff',
@@ -24,6 +26,7 @@ export const Colors = {
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
     favorite: '#FF6369',
+    error: '#FF6369',
   },
 } as const;
 

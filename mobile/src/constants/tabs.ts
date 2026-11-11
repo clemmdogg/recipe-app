@@ -1,7 +1,7 @@
 import type { AndroidSymbol, SFSymbol } from 'expo-symbols';
 
 export type AppTab = {
-  /** Route name of the tab's folder in `src/app/`; native tab triggers match on this. */
+  /** Route name of the tab's folder in `src/app/(app)/`; native tab triggers match on this. */
   name: string;
   /** URL the tab opens; used by the web tab bar. */
   href: '/' | '/plan' | '/list' | '/pantry' | '/household';

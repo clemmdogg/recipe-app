@@ -29,7 +29,12 @@ Run lint, type check and tests before considering a task done.
 ## Architecture
 
 - **Routing**: Expo Router with `typedRoutes` enabled. Generated types live in `.expo/types` and are only refreshed when the dev server runs, so after adding or removing routes, run `npm start` once before `tsc`. The root `src/app/_layout.tsx` wraps everything in a navigation `ThemeProvider` and renders `AppTabs`.
-- **Tabs**: Each tab is a folder in `src/app/` with its own `_layout.tsx` (a `Stack`) and `index.tsx`. Detail screens for a tab go in the same folder.
+- **Login gate**: the root layout is a `Stack` with `Stack.Protected` guards. Signed in, it shows the `(app)` group, whose `_layout.tsx` renders `AppTabs`. Signed out, it shows `sign-in.tsx` and `sign-up.tsx`. Flipping the session switches between them, so screens never navigate there themselves.
+  - `SessionProvider` / `useSession()` in `src/view-models/session.tsx` hold the session, the shared `ApiClient`, and `signIn`/`signUp`/`signOut`. The saved login is read at start, offline, while `SplashScreenController` keeps the splash screen up.
+  - **Talk to our API only through `ApiClient`** (`src/services/api-client.ts`, from `useSession().client`). It adds the access token, refreshes it once on `token_expired`, and signs out locally when the login is no longer valid. It throws `ApiRequestError` (with the API's `code`) or `NetworkError`.
+  - Tokens and the session are stored with `expo-secure-store` behind the `AuthStorage` interface (`src/services/auth-storage.ts`). Tests use `createMemoryAuthStorage()` from `jest/`.
+  - The API address is `process.env.EXPO_PUBLIC_API_URL`, from `mobile/.env.local` (never committed, see `.env.example`). Write it out literally: Expo only inlines the literal form. Restart `npm start` after changing it.
+- **Tabs**: Each tab is a folder in `src/app/(app)/` with its own `_layout.tsx` (a `Stack`) and `index.tsx`. The `(app)` group doesn't change URLs. Detail screens for a tab go in the same folder.
   - Recipes is the `(recipes)` route group, so its `index.tsx` is the app's start route `/`. Plan, List and Pantry are at `/plan`, `/list` and `/pantry`.
   - The tab bar is defined once in `src/constants/tabs.ts` (`TabRoutes`: route name, href, label, SF Symbol and Material icon). Add or change tabs there, not in the tab bar components.
 - **Platform-split files**: `.web.tsx` / `.web.ts` variants override the native files of the same name.
@@ -49,7 +54,7 @@ Run lint, type check and tests before considering a task done.
   - For results that change while the user types, pass `{ keepPreviousData: true }`. The previous key's data then stays visible while the new key loads.
   - View models (`src/view-models/`, e.g. `use-recipe-browser.ts`) combine it with repository and service functions. Screens stay thin. See "Layers" below.
 - **Shared UI states**: `LoadingState`, `ErrorState` (with an optional retry) and `EmptyState` in `src/components/`.
-- **Detail screens** live inside their tab's folder, e.g. `src/app/(recipes)/recipe/[id].tsx` is `/recipe/[id]`. Link to them with the object form: `{ pathname: '/recipe/[id]', params: { id } }`.
+- **Detail screens** live inside their tab's folder, e.g. `src/app/(app)/(recipes)/recipe/[id].tsx` is `/recipe/[id]`. Link to them with the object form: `{ pathname: '/recipe/[id]', params: { id } }`.
 - **Don't wrap a `Pressable` that has a style function (`style={({ pressed }) => ...}`) in `<Link asChild>`.** Link merges the child's style as an object, so the function and all its layout styles (width, flex) are silently dropped. Navigate in `onPress` with `router.push(...)` instead.
 - **Screens shared between tabs:** put the screen in `src/components/` and add a thin route file in each tab, so navigation stays inside the current tab.
   - The recipe screen (`RecipeScreen`, with a `tab` prop) is routed at `/recipe/[id]` and `/plan/recipe/[id]`.
@@ -96,9 +101,9 @@ The plan is to build this after the pantry and shopping list work locally. Check
 - **Permissions:** every member can edit all data and invite others. Only the household's creator can remove other members.
   - **When the creator leaves** (or deletes their account), the member who has been in the household the longest becomes the new creator.
 - **Deleting an account:** users can delete their account in the Household tab. It needs their password. If they were the last member, the household and its data are deleted too.
-- **The Household tab** (`src/app/household/`) is where the household is managed: name, members, invite, join with code, leave, and sign out.
+- **The Household tab** (`src/app/(app)/household/`) is where the household is managed: name, members, invite, join with code, leave, and sign out.
   - It is the 5th and last tab, because Android allows at most 5. Account and future settings go here too.
-  - It is a placeholder until accounts exist.
+  - Until step 4 of connecting the app, it is a placeholder that shows who is signed in and can sign out.
 
 **Decided: backend and login**
 
