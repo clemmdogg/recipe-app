@@ -4,6 +4,12 @@ const ConfigSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required. Copy .env.example to .env.'),
   HOST: z.string().default('127.0.0.1'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  JWT_SECRET: z
+    .string()
+    .min(32, 'JWT_SECRET must be at least 32 characters. See .env.example for how to make one.'),
+  // On the server, requests arrive through Caddy. Trusting it lets the API see each phone's real
+  // IP address, which rate limiting needs. Only turn this on behind a proxy.
+  TRUST_PROXY: z.stringbool().default(false),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

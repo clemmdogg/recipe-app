@@ -18,6 +18,11 @@ export type DatabasePool = pg.Pool;
  */
 export type Database = Pick<pg.Pool | pg.PoolClient, 'query'>;
 
+/** Whether a query failed because it broke a UNIQUE constraint, e.g. an email already in use. */
+export function isUniqueViolation(error: unknown): boolean {
+  return error instanceof pg.DatabaseError && error.code === '23505';
+}
+
 export function createPool(connectionString: string): DatabasePool {
   return new pg.Pool({ connectionString });
 }

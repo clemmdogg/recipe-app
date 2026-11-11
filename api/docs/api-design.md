@@ -181,7 +181,7 @@ Request: `{ "refreshToken": "q3Jk…" }`
 
 Response **200**: `{ "accessToken": "…", "refreshToken": "…" }`
 
-Errors: **401** `invalid_refresh_token` (unknown, expired or already used). The app then shows the sign-in screen.
+Errors: **401** `invalid_refresh_token` (unknown, expired or already used), **429** `rate_limited`. On 401 the app shows the sign-in screen.
 
 #### `POST /v1/auth/logout`
 
@@ -219,7 +219,7 @@ What happens:
 3. If they were the last member, the household and all its data are deleted.
 4. The user row is deleted, including email, name and password hash. Household data they created stays with the household, because it belongs to the family, not to them.
 
-Errors: **400** `validation_failed`, **403** `wrong_password`.
+Errors: **400** `validation_failed`, **401** `unauthenticated` or `token_expired`, **403** `wrong_password`.
 
 The app then deletes its local database and shows the sign-in screen.
 

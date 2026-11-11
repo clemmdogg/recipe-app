@@ -24,6 +24,13 @@ function handleError(error: FastifyError, request: FastifyRequest, reply: Fastif
     return reply.code(400).send(errorBody('validation_failed', error.message, details));
   }
 
+  // Thrown by @fastify/rate-limit.
+  if (error.statusCode === 429) {
+    return reply
+      .code(429)
+      .send(errorBody('rate_limited', 'Too many attempts. Wait a minute and try again.'));
+  }
+
   // Errors Fastify itself raises for bad requests, e.g. a body that isn't valid JSON.
   const statusCode = error.statusCode ?? 500;
   if (statusCode < 500) {

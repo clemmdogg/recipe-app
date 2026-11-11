@@ -4,8 +4,10 @@ The self-built REST API for the recipe app: accounts, households and sync. **The
 
 ## Project state
 
-- **Done:** project setup, `GET /v1/health`, the migration runner and the full database schema (migration 001).
-- **Next, in this order:** login (signup, login, refresh, logout, delete account) → household and invites → sync → Docker and Caddy on the VPS (needs a domain name first).
+- **Done:**
+  - project setup, `GET /v1/health`, the migration runner and the full database schema (migration 001)
+  - login: `POST /v1/auth/signup`, `login`, `refresh`, `logout`, `GET /v1/me` and `DELETE /v1/me`, the access token check and rate limiting
+- **Next, in this order:** household and invites → sync → Docker and Caddy on the VPS (needs a domain name first).
 
 ## Commands
 
@@ -24,7 +26,8 @@ npm start          # run the compiled build
 Run lint, typecheck and tests before considering a task done.
 
 - API documentation generated from the Zod schemas: http://localhost:3000/documentation while `npm run dev` runs.
-- `.env` (never committed) holds `DATABASE_URL`, `TEST_DATABASE_URL`, `HOST` and `PORT`. `.env.example` shows the format.
+- `.env` (never committed) holds `DATABASE_URL`, `TEST_DATABASE_URL`, `HOST`, `PORT`, `JWT_SECRET` and `TRUST_PROXY`. `.env.example` shows the format. `src/config.ts` validates them at startup.
+- To try protected routes on the documentation page: sign up or log in there, copy `accessToken`, click "Authorize" and paste it.
 
 ## Local setup
 
@@ -37,10 +40,11 @@ Run lint, typecheck and tests before considering a task done.
 - Fastify 5 with `fastify-type-provider-zod` (Zod 4) for validation, response serialization and typed requests
 - `pg` (node-postgres) with plain parameterized SQL
 - `@fastify/swagger` and `@fastify/swagger-ui` for the documentation page
+- `argon2` (argon2id) for passwords, `jose` for access tokens (HS256 JWT), `@fastify/rate-limit`
 - TypeScript 6 in strict mode, ES modules (`"type": "module"`)
 - Vitest for tests, `tsx` for running TypeScript in development
 - TypeScript 7 exists, but `typescript-eslint` only supports up to 6.0, so stay on `~6.0`
-- Planned, add when the feature needs them: argon2, `jose`, `@fastify/rate-limit`. Check current docs and versions before installing.
+- Check current docs and versions before adding a library.
 
 ## Structure
 
@@ -50,10 +54,12 @@ src/
   app.ts          buildApp(): registers plugins and routes, doesn't listen (tests use app.inject)
   config.ts       environment variables, validated with Zod
   errors.ts       ApiError and the error response schema
-  plugins/        cross-cutting: error handler (later: auth check, rate limiting)
-  routes/         one file per area, a Fastify plugin with Zod schemas per endpoint
-  services/       business rules
+  plugins/        cross-cutting: error handler, the authenticate hook
+  routes/         one file per area, a Fastify plugin with Zod schemas per endpoint; shared schemas in schemas.ts
+  services/       business rules (auth, account, membership)
   repositories/   all SQL
+  security/       passwords (argon2), access tokens (JWT), refresh tokens (random + SHA-256)
+  types/          shared TypeScript types
   db/             pool, transactions, migration runner, migrations/
 test/             *.test.ts, plus helpers/ and setup.ts
 docs/             api-design.md
@@ -66,8 +72,18 @@ Same principle as the app (see "Loose coupling" in `mobile/CLAUDE.md`): **routes
 - **Routes** declare method, path and Zod schemas for body, params, query and every response status, then call a service. No SQL and no business rules. Give each route a `summary` and `tags` for the documentation page.
 - **Services** hold the rules ("only the creator can remove members"). They throw `ApiError(status, code, message)` for errors the client should see, with the codes listed in `docs/api-design.md`.
 - **Repositories** hold all SQL. They take a `Database` as their first parameter (`Pick<Pool | PoolClient, 'query'>`), so they work both on the pool and inside `withTransaction`.
-- **Dependencies are passed in, not imported.** `buildApp({ db })` gets the database, and route plugins get it through their options. That is how tests swap in the test database or a broken one.
+- **Dependencies are passed in, not imported.** `buildApp({ pool, accessTokenSecret })` gets the database and the JWT secret, and route plugins get it through their options. That is how tests swap in the test database or a broken one.
 - Don't add DI containers, base classes or interfaces with one implementation.
+
+## Authentication
+
+- **Protected routes** get the `authenticate` hook through their plugin options and add it with `app.addHook('onRequest', authenticate)`. In a handler, `requireAuth(request)` returns `{ id, householdId }`. See `routes/me.ts`.
+- The hook verifies the JWT and then **loads the user's current household from the database** on every request, so leaving, joining, removal and account deletion take effect at once. Don't put the household id in the token.
+- **Access tokens** last 15 minutes. **Refresh tokens** last 30 days, are stored only as a SHA-256 hash, and rotate on every use. Reusing a rotated token revokes all of the user's tokens.
+- Login gives the same `invalid_credentials` error, and takes about the same time, for an unknown email and a wrong password (`rejectUnknownUser`).
+- Emails are trimmed and lowercased by `EmailSchema` before they reach services.
+- **Rate limiting** is off by default. Routes opt in with `config: { rateLimit }` (signup, login, refresh). On the server, set `TRUST_PROXY=true` so the limit is per phone, not per Caddy.
+- **Anyone leaving a household** (delete account, and later leave, join, removal) goes through `leaveHousehold()` in `services/membership.ts`, in the same transaction. It deletes an empty household or hands the creator role to the longest-standing member.
 
 ## Rules
 
@@ -93,5 +109,6 @@ Same principle as the app (see "Loose coupling" in `mobile/CLAUDE.md`): **routes
 
 - Tests run against the real Postgres test database. `createTestDatabase()` in `test/helpers/test-database.ts` empties it (drops the `public` schema) and runs migrations. Call `pool.end()` in `afterAll`.
 - Test files run one at a time (`fileParallelism: false`), because they share the test database.
-- Test the API through HTTP with `app.inject()`, and test services and repositories directly where that's simpler.
+- Build the app with `buildTestApp(pool)` (`test/helpers/test-app.ts`), which uses a test JWT secret and a high rate limit. Test the API through HTTP with `app.inject()`, and test services and repositories directly where that's simpler.
+- `test/helpers/accounts.ts` has `signUp(app)` (a new user with a unique email), `addMember(pool, householdId, joinedAt)` and `bearer(accessToken)`.
 - Write tests for every endpoint, including its error cases and access rules (another household's data must be invisible).

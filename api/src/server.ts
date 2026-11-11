@@ -9,7 +9,12 @@ const pool = createPool(config.DATABASE_URL);
 // Like the app, the API brings its database schema up to date before it accepts requests.
 await runMigrations(pool);
 
-const app = await buildApp({ db: pool, logger: true });
+const app = await buildApp({
+  pool,
+  accessTokenSecret: config.JWT_SECRET,
+  trustProxy: config.TRUST_PROXY,
+  logger: true,
+});
 await app.listen({ host: config.HOST, port: config.PORT });
 
 // Finish open requests and close database connections when stopped (Ctrl+C, or Docker).
