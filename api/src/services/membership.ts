@@ -1,6 +1,31 @@
+import { randomUUID } from 'node:crypto';
+
 import type { Database } from '../db/database.ts';
-import { deleteHousehold, lockHousehold, setHouseholdCreator } from '../repositories/households.ts';
-import { findLongestMember } from '../repositories/users.ts';
+import {
+  deleteHousehold,
+  insertHousehold,
+  lockHousehold,
+  setHouseholdCreator,
+} from '../repositories/households.ts';
+import { findLongestMember, moveUserToHousehold } from '../repositories/users.ts';
+
+/** Gives the user a new empty household of their own, e.g. "Anna's household". */
+export async function moveToNewHousehold(
+  db: Database,
+  user: { id: string; name: string }
+): Promise<string> {
+  const household = await insertHousehold(db, {
+    id: randomUUID(),
+    name: defaultHouseholdName(user.name),
+    createdBy: user.id,
+  });
+  await moveUserToHousehold(db, user.id, household.id);
+  return household.id;
+}
+
+export function defaultHouseholdName(userName: string): string {
+  return `${userName}'s household`;
+}
 
 /**
  * Tidies up a household a user is about to leave, for any reason (deleting their account, and

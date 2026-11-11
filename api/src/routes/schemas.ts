@@ -22,6 +22,20 @@ export const HouseholdSummarySchema = z.object({
   name: z.string(),
 });
 
+export const HouseholdSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  createdBy: z.uuid(),
+  members: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string(),
+      joinedAt: z.iso.datetime(),
+      isCreator: z.boolean(),
+    })
+  ),
+});
+
 export const TokenPairSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),

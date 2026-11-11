@@ -10,6 +10,8 @@ const ConfigSchema = z.object({
   // On the server, requests arrive through Caddy. Trusting it lets the API see each phone's real
   // IP address, which rate limiting needs. Only turn this on behind a proxy.
   TRUST_PROXY: z.stringbool().default(false),
+  // Invite links are `${INVITE_LINK_BASE_URL}/${code}`. On the server: https://<domain>/join
+  INVITE_LINK_BASE_URL: z.url().default('http://localhost:3000/join'),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

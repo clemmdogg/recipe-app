@@ -290,7 +290,9 @@ Response **200**:
 
 `joiningDeletesData` is `true` when the user is the only member of their current household and it has data. That data is deleted when they join.
 
-Errors: **404** `invite_not_found`, **410** `invite_expired`, **409** `already_member` (the invite is for the user's own household).
+Errors: **404** `invite_not_found`, **410** `invite_expired`, **409** `already_member` (the invite is for the user's own household), **429** `rate_limited` (to stop people guessing codes).
+
+The code is accepted the way people type it: any letter case, with or without the dash.
 
 #### `POST /v1/invites/{code}/accept`
 
@@ -302,11 +304,11 @@ Request:
 { "confirmDataLoss": true }
 ```
 
-`confirmDataLoss` must be `true` when `joiningDeletesData` is true. This makes sure the app has shown the warning.
+`confirmDataLoss` must be `true` when `joiningDeletesData` is true. This makes sure the app has shown the warning. The body can be left out when nothing would be lost.
 
 Response **200**: the new household, as in `GET /v1/household`.
 
-Errors: **404** `invite_not_found`, **410** `invite_expired`, **409** `already_member`, **409** `data_loss_not_confirmed`.
+Errors: **404** `invite_not_found`, **410** `invite_expired`, **409** `already_member`, **409** `data_loss_not_confirmed`, **429** `rate_limited`.
 
 After joining, the app deletes its local database and does a full pull of the new household's data.
 
@@ -465,7 +467,7 @@ Schema changes go through numbered migration files, like the app.
 
 - Passwords are hashed with **argon2id**, which is the current recommendation for password storage. The hash includes a random salt, so two users with the same password get different hashes.
 - The plain password is never stored or logged.
-- Login and signup are rate limited (for example 10 attempts per minute per IP address) to slow down password guessing.
+- Signup, login, token refresh and the invite endpoints are rate limited (10 requests per minute per IP address) to slow down guessing passwords and invite codes.
 
 ### Two kinds of tokens
 

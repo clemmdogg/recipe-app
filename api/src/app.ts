@@ -15,6 +15,8 @@ import { registerErrorHandlers } from './plugins/error-handler.ts';
 import { createAccessTokenKey } from './security/access-tokens.ts';
 import { authRoutes, type RateLimit } from './routes/auth.ts';
 import { healthRoutes } from './routes/health.ts';
+import { householdRoutes } from './routes/household.ts';
+import { inviteRoutes } from './routes/invites.ts';
 import { meRoutes } from './routes/me.ts';
 
 export type AppOptions = {
@@ -26,6 +28,8 @@ export type AppOptions = {
   authRateLimit?: RateLimit;
   /** Behind Caddy on the server: read the phone's real IP address from the proxy headers. */
   trustProxy?: boolean;
+  /** Invite links are `${inviteLinkBaseUrl}/${code}`. */
+  inviteLinkBaseUrl?: string;
   logger?: FastifyServerOptions['logger'];
 };
 
@@ -38,6 +42,7 @@ export async function buildApp({
   accessTokenSecret,
   authRateLimit = { max: 10, timeWindow: '1 minute' },
   trustProxy = false,
+  inviteLinkBaseUrl = 'http://localhost:3000/join',
   logger = false,
 }: AppOptions) {
   const app = Fastify({ logger, trustProxy }).withTypeProvider<ZodTypeProvider>();
@@ -72,6 +77,8 @@ export async function buildApp({
   await app.register(healthRoutes, { prefix: '/v1', db: pool });
   await app.register(authRoutes, { prefix: '/v1', auth, rateLimit: authRateLimit });
   await app.register(meRoutes, { prefix: '/v1', pool, authenticate });
+  await app.register(householdRoutes, { prefix: '/v1', pool, authenticate, inviteLinkBaseUrl });
+  await app.register(inviteRoutes, { prefix: '/v1', pool, authenticate, rateLimit: authRateLimit });
 
   return app;
 }

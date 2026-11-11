@@ -53,6 +53,40 @@ export async function findPasswordHash(db: Database, userId: string): Promise<st
   return result.rows[0]?.password_hash ?? null;
 }
 
+/** The household's members, longest-standing first. */
+export async function listMembers(
+  db: Database,
+  householdId: string
+): Promise<{ id: string; name: string; joinedAt: Date }[]> {
+  const result = await db.query<{ id: string; name: string; joined_household_at: Date }>(
+    `SELECT id, name, joined_household_at FROM users
+     WHERE household_id = $1
+     ORDER BY joined_household_at, id`,
+    [householdId]
+  );
+  return result.rows.map((row) => ({ id: row.id, name: row.name, joinedAt: row.joined_household_at }));
+}
+
+export async function countMembers(db: Database, householdId: string): Promise<number> {
+  const result = await db.query<{ count: number }>(
+    'SELECT count(*) AS count FROM users WHERE household_id = $1',
+    [householdId]
+  );
+  return result.rows[0]!.count;
+}
+
+/** Moves the user to another household. Their join time starts again. */
+export async function moveUserToHousehold(
+  db: Database,
+  userId: string,
+  householdId: string
+): Promise<void> {
+  await db.query('UPDATE users SET household_id = $2, joined_household_at = now() WHERE id = $1', [
+    userId,
+    householdId,
+  ]);
+}
+
 /**
  * The member who has been in the household the longest, apart from `exceptUserId`.
  * Ties (same join time) go to the lowest id, so the answer is always the same.

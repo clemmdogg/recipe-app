@@ -28,6 +28,7 @@ import type {
   TokenPair,
   User,
 } from '../types/account.ts';
+import { defaultHouseholdName } from './membership.ts';
 
 /** What the auth service needs: the database and the key that signs access tokens. */
 export type AuthContext = {
@@ -52,7 +53,7 @@ export async function signUp(
       const userId = randomUUID();
       const household = await insertHousehold(db, {
         id: randomUUID(),
-        name: `${input.name}'s household`,
+        name: defaultHouseholdName(input.name),
         createdBy: userId,
       });
       const user = await insertUser(db, {

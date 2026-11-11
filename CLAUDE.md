@@ -19,10 +19,10 @@ The product and backend decisions (households, login, sync rules, hosting) are i
 
 ## Current work: the API
 
-The API is set up, with a health endpoint and the full database schema. Build the rest in this order, with tests for each part, and let the student try each part before moving on:
+The API has health, login, accounts, household and invites, with tests. Build the rest in this order, with tests for each part, and let the student try each part before moving on:
 
-1. Login: signup, login, refresh, logout, delete account
-2. Household and invites
+1. ~~Login: signup, login, refresh, logout, delete account~~ Done
+2. ~~Household and invites~~ Done
 3. Sync
 4. Docker and Caddy on the VPS (needs a domain name first)
 

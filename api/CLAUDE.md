@@ -7,7 +7,8 @@ The self-built REST API for the recipe app: accounts, households and sync. **The
 - **Done:**
   - project setup, `GET /v1/health`, the migration runner and the full database schema (migration 001)
   - login: `POST /v1/auth/signup`, `login`, `refresh`, `logout`, `GET /v1/me` and `DELETE /v1/me`, the access token check and rate limiting
-- **Next, in this order:** household and invites → sync → Docker and Caddy on the VPS (needs a domain name first).
+  - household and invites: `GET`/`PATCH /v1/household`, `POST /v1/household/invites`, `POST /v1/household/leave`, `DELETE /v1/household/members/:userId`, `GET /v1/invites/:code` and `POST /v1/invites/:code/accept`
+- **Next, in this order:** sync → Docker and Caddy on the VPS, including the static `/join/<code>` page (needs a domain name first).
 
 ## Commands
 
@@ -26,7 +27,7 @@ npm start          # run the compiled build
 Run lint, typecheck and tests before considering a task done.
 
 - API documentation generated from the Zod schemas: http://localhost:3000/documentation while `npm run dev` runs.
-- `.env` (never committed) holds `DATABASE_URL`, `TEST_DATABASE_URL`, `HOST`, `PORT`, `JWT_SECRET` and `TRUST_PROXY`. `.env.example` shows the format. `src/config.ts` validates them at startup.
+- `.env` (never committed) holds `DATABASE_URL`, `TEST_DATABASE_URL`, `HOST`, `PORT`, `JWT_SECRET`, `TRUST_PROXY` and `INVITE_LINK_BASE_URL`. `.env.example` shows the format. `src/config.ts` validates them at startup.
 - To try protected routes on the documentation page: sign up or log in there, copy `accessToken`, click "Authorize" and paste it.
 
 ## Local setup
@@ -56,9 +57,9 @@ src/
   errors.ts       ApiError and the error response schema
   plugins/        cross-cutting: error handler, the authenticate hook
   routes/         one file per area, a Fastify plugin with Zod schemas per endpoint; shared schemas in schemas.ts
-  services/       business rules (auth, account, membership)
+  services/       business rules (auth, account, household, invites, membership)
   repositories/   all SQL
-  security/       passwords (argon2), access tokens (JWT), refresh tokens (random + SHA-256)
+  security/       passwords (argon2), access tokens (JWT), refresh tokens (random + SHA-256), invite codes
   types/          shared TypeScript types
   db/             pool, transactions, migration runner, migrations/
 test/             *.test.ts, plus helpers/ and setup.ts
@@ -82,8 +83,10 @@ Same principle as the app (see "Loose coupling" in `mobile/CLAUDE.md`): **routes
 - **Access tokens** last 15 minutes. **Refresh tokens** last 30 days, are stored only as a SHA-256 hash, and rotate on every use. Reusing a rotated token revokes all of the user's tokens.
 - Login gives the same `invalid_credentials` error, and takes about the same time, for an unknown email and a wrong password (`rejectUnknownUser`).
 - Emails are trimmed and lowercased by `EmailSchema` before they reach services.
-- **Rate limiting** is off by default. Routes opt in with `config: { rateLimit }` (signup, login, refresh). On the server, set `TRUST_PROXY=true` so the limit is per phone, not per Caddy.
-- **Anyone leaving a household** (delete account, and later leave, join, removal) goes through `leaveHousehold()` in `services/membership.ts`, in the same transaction. It deletes an empty household or hands the creator role to the longest-standing member.
+- **Rate limiting** is off by default. Routes opt in with `config: { rateLimit }` (signup, login, refresh, and both invite routes against code guessing). On the server, set `TRUST_PROXY=true` so the limit is per phone, not per Caddy.
+- **Anyone leaving a household** (delete account, leave, joining another, removal) goes through `leaveHousehold()` in `services/membership.ts`, in the same transaction. It deletes an empty household or hands the creator role to the longest-standing member. `moveToNewHousehold()` gives someone a new empty household.
+- **Invite codes** are stored uppercase without the dash and shown as `XXXX-XXXX`. Normalize user input with `normalizeInviteCode()`.
+- **Optional request bodies:** Fastify passes `null` when there is no body, and Zod's `.default()` only replaces `undefined`. Use `.nullish()` and a fallback in the handler (see `routes/invites.ts`).
 
 ## Rules
 
@@ -110,5 +113,5 @@ Same principle as the app (see "Loose coupling" in `mobile/CLAUDE.md`): **routes
 - Tests run against the real Postgres test database. `createTestDatabase()` in `test/helpers/test-database.ts` empties it (drops the `public` schema) and runs migrations. Call `pool.end()` in `afterAll`.
 - Test files run one at a time (`fileParallelism: false`), because they share the test database.
 - Build the app with `buildTestApp(pool)` (`test/helpers/test-app.ts`), which uses a test JWT secret and a high rate limit. Test the API through HTTP with `app.inject()`, and test services and repositories directly where that's simpler.
-- `test/helpers/accounts.ts` has `signUp(app)` (a new user with a unique email), `addMember(pool, householdId, joinedAt)` and `bearer(accessToken)`.
+- `test/helpers/accounts.ts` has `signUp(app)` (a new user with a unique email), `join(app, inviter, joiner)`, `createInvite(app, user)`, `addMember(pool, householdId, joinedAt)` (to control join times), `addPantryItem(pool, householdId)` and `bearer(accessToken)`.
 - Write tests for every endpoint, including its error cases and access rules (another household's data must be invisible).

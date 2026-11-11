@@ -13,6 +13,7 @@ const app = await buildApp({
   pool,
   accessTokenSecret: config.JWT_SECRET,
   trustProxy: config.TRUST_PROXY,
+  inviteLinkBaseUrl: config.INVITE_LINK_BASE_URL,
   logger: true,
 });
 await app.listen({ host: config.HOST, port: config.PORT });
