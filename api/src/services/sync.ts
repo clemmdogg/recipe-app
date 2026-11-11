@@ -132,9 +132,11 @@ async function applyRow(
   const stored = await lockRow(db, name, householdId, id);
 
   if (!stored) {
-    // Created and deleted on the device before it was ever pushed: nothing to do.
-    if (!deleted) {
-      await insertRow(db, name, householdId, id, rowFields);
+    await insertRow(db, name, householdId, id, rowFields);
+    // Created and deleted on the device before it was ever pushed. Keep it as a deleted row, not
+    // nothing: other rows can still point to it, e.g. a plan entry for a recipe that was unsaved.
+    if (deleted) {
+      await softDeleteRow(db, name, householdId, id);
     }
     return true;
   }

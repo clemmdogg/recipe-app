@@ -418,7 +418,7 @@ Request:
 - Tables are applied in an order that respects foreign keys: recipes before their ingredients and meal plan entries, shopping lists before their items.
 - Max 1000 rows per push (and 20 MB). The app splits larger pushes.
 - Every row is sent with all its fields, also when it is deleted.
-- A row that was created and deleted on the device before it was ever pushed is skipped: there is nothing to delete on the server.
+- A row that was created and deleted on the device before it was ever pushed is saved as a deleted row. Other rows can still point to it, for example a meal plan entry for a recipe that was later removed from the saved recipes.
 
 Response **200**:
 

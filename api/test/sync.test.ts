@@ -245,6 +245,33 @@ describe('POST /v1/changes', () => {
     expect((await serverPantryItem(stranger, sharedId)).ingredientName).toBe('Sugar');
   });
 
+  it('keeps a row deleted before its first push, so rows pointing to it still work', async () => {
+    const anna = await signUp(app);
+    const recipe = {
+      id: '52772',
+      name: 'Teriyaki Chicken Casserole',
+      category: null,
+      area: null,
+      instructions: null,
+      thumbnailUrl: null,
+      youtubeUrl: null,
+      sourceUrl: null,
+    };
+
+    // Saved, planned, then unsaved again, all before the first sync.
+    const result = await push(anna, {
+      recipes: [{ ...recipe, deleted: true, baseChangeNumber: null }],
+      mealPlanEntries: [
+        { id: randomUUID(), date: '2026-11-14', recipeId: '52772', deleted: false, baseChangeNumber: null },
+      ],
+    });
+
+    expect(result).toEqual({ applied: 2, rejected: [] });
+    const { changes } = await pull(anna);
+    expect(changes.recipes[0]).toMatchObject({ id: '52772', deletedAt: expect.any(String) });
+    expect(changes.mealPlanEntries).toHaveLength(1);
+  });
+
   it('saves nothing when one row points to something that does not exist', async () => {
     const anna = await signUp(app);
 
