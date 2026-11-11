@@ -4,7 +4,7 @@ import { IdNamespaces, nameBasedUuid } from '@/utils/ids';
 import { ingredientKey } from '@/utils/shopping-list';
 
 /*
- * Row-level helpers for shopping lists, used by src/db/shopping-list.ts. Lists and lines have
+ * Row-level helpers for shopping lists, used by src/repositories/shopping-list.ts. Lists and lines have
  * name-based ids (week, ingredient), so the same line on two devices merges on sync.
  */
 

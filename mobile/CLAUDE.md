@@ -70,7 +70,9 @@ Run lint, type check and tests before considering a task done.
 Mobile recipe app built with React Native (Expo) and a local SQLite database.
 A cloud API and database will be added later, so local data must be sync-ready.
 
-**This is a school project.** It will not be published on the App Store or Google Play. It is shown via Expo Go, an installable Android build, or the web version.
+**This is a school project.** It will not be published on the App Store or Google Play. It is shown via Expo Go or an installable Android build.
+
+- **Phones and tablets only (decided).** The web version is dropped: login needs `expo-secure-store`, which doesn't work in a browser, and the app only needs to run on phones and tablets. The web-specific code (`.web.tsx` files, `metro.config.js` web setup, `web` in `app.json`) still exists and is to be removed in a separate change.
 
 - The school requires a **self-built RESTful API** and **SSL (HTTPS)**. The API is part of what gets graded, so don't replace it with a backend service that generates the API, such as Supabase or Firebase.
 - TheMealDB's free test key `1` is allowed "for educational use", so no supporter key is needed.
@@ -90,7 +92,10 @@ The plan is to build this after the pantry and shopping list work locally. Check
   - **Joining** another household with an invite moves the user there. If they were the only member of a household that has data, warn first that the data will be deleted.
   - **Leaving** gives the user a new empty household. A household with no members left is deleted.
 - **Invites** are a link containing a code, shared via the system share sheet. They expire after 7 days.
+  - The link opens a simple web page that shows the code, and the user types it into the app ("Join with code"). No Android App Links or deep linking.
 - **Permissions:** every member can edit all data and invite others. Only the household's creator can remove other members.
+  - **When the creator leaves** (or deletes their account), the member who has been in the household the longest becomes the new creator.
+- **Deleting an account:** users can delete their account in the Household tab. It needs their password. If they were the last member, the household and its data are deleted too.
 - **The Household tab** (`src/app/household/`) is where the household is managed: name, members, invite, join with code, leave, and sign out.
   - It is the 5th and last tab, because Android allows at most 5. Account and future settings go here too.
   - It is a placeholder until accounts exist.
@@ -116,9 +121,19 @@ The plan is to build this after the pantry and shopping list work locally. Check
 - One git repository at `recipe-app/` with the Expo app in `mobile/` (this folder) and the API in `api/`. That way the app and the API can share TypeScript types.
 - Run app commands (`npm test`, `npx expo ...`) from `mobile/`. Git commands work from anywhere in `recipe-app/`, and paths in git output start with `mobile/`.
 
-**Not decided yet**
+**Decided: API framework**
 
-- **The API framework and libraries**, and how to run Postgres while developing locally. Docker isn't installed on the development machine.
+- **Fastify.** The student chose it over Express, knowing it is harder to learn, because it is the more modern choice with built-in input validation and better TypeScript support. Explain Fastify concepts (plugins, hooks, schemas) as they come up.
+
+**Decided: API libraries and local setup**
+
+- **Validation:** Zod, plugged into Fastify with `fastify-type-provider-zod`. Schemas can be shared with the app, and `@fastify/swagger` can generate API docs from them.
+- **Database access:** `pg` (node-postgres) with plain parameterized SQL in repository files, the same style as the app.
+- **Passwords:** hashed with argon2.
+- **Tokens:** JWT with `jose`.
+- **Rate limiting:** `@fastify/rate-limit` on signup, login and token refresh.
+- **Local Postgres:** installed natively with the official PostgreSQL installer for Windows. Docker is only used on the server.
+- Check current docs and versions for each library before installing it.
 - **Exact endpoints.** Write an API design for the student to review before building.
 
 **Decided: sync and conflicts**
