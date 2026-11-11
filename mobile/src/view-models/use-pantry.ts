@@ -6,6 +6,7 @@ import { useAsyncResource } from '@/hooks/use-async-resource';
 import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
 import { searchIngredients } from '@/repositories/ingredients';
 import { addToPantry, getPantryItems, removeFromPantry } from '@/repositories/pantry';
+import { useReloadOnSync } from '@/view-models/sync';
 import { useIngredientCatalog } from '@/view-models/use-ingredient-catalog';
 
 /** Pantry items, ingredient suggestions while typing, and adding/removing items. */
@@ -17,6 +18,7 @@ export function usePantry() {
   const items = useAsyncResource('pantry', () => getPantryItems(db));
   // The shopping list will move bought items into the pantry, so refresh when coming back.
   useReloadOnRefocus(items.reload);
+  useReloadOnSync(items.reload);
 
   const trimmedQuery = query.trim();
   const suggestions = useAsyncResource(

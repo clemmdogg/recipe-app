@@ -8,6 +8,7 @@ import { getSavedRecipe, removeRecipe, saveRecipe } from '@/repositories/recipes
 import { getRecipe } from '@/services/mealdb';
 import type { Recipe } from '@/types/recipe';
 import { toDateKey, type DateKey } from '@/utils/dates';
+import { useReloadOnSync } from '@/view-models/sync';
 
 type LoadedRecipe = {
   recipe: Recipe | null;
@@ -35,6 +36,7 @@ export function useRecipeDetails(id: string) {
   // "Add to plan" may save the recipe and adds planned dates, so refresh when coming back.
   const { reload } = resource;
   useReloadOnRefocus(reload);
+  useReloadOnSync(reload);
 
   const recipe = resource.data?.recipe ?? null;
   const isSaved = resource.data?.savedInDatabase ?? false;

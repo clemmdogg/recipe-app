@@ -7,6 +7,7 @@ import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
 import { getSavedRecipes } from '@/repositories/recipes';
 import { getCategories, getRecipesByCategory, searchRecipes } from '@/services/mealdb';
 import type { RecipeSummary } from '@/types/recipe';
+import { useReloadOnSync } from '@/view-models/sync';
 
 const SearchDelayMs = 400;
 
@@ -37,6 +38,7 @@ export function useRecipeBrowser() {
 
   // Saving or removing happens on the detail screen, so refresh when returning to this tab.
   useReloadOnRefocus(saved.reload);
+  useReloadOnSync(saved.reload);
 
   let mode: BrowseMode = { kind: 'saved' };
   let recipes: AsyncResource<RecipeSummary[]> = saved;

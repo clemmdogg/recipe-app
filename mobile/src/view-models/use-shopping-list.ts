@@ -16,6 +16,7 @@ import {
 } from '@/repositories/shopping-list';
 import type { ShoppingLine } from '@/types/shopping-list';
 import { buildShoppingList, ingredientKey } from '@/utils/shopping-list';
+import { useReloadOnSync } from '@/view-models/sync';
 import { useIngredientCatalog } from '@/view-models/use-ingredient-catalog';
 import { useWeekNavigation } from '@/view-models/use-week-navigation';
 
@@ -36,6 +37,7 @@ export function useShoppingList() {
   // The plan and the pantry change in other tabs, so rebuild the list when coming back.
   const { reload } = list;
   useReloadOnRefocus(reload);
+  useReloadOnSync(reload);
 
   const trimmedQuery = query.trim();
   const suggestions = useAsyncResource(

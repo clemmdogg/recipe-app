@@ -4,6 +4,7 @@ import { useReloadOnRefocus } from '@/hooks/use-reload-on-refocus';
 import { getPlan, removeFromPlan } from '@/repositories/meal-plan';
 import type { PlanDay } from '@/types/meal-plan';
 import { daysOfWeek, toDateKey } from '@/utils/dates';
+import { useReloadOnSync } from '@/view-models/sync';
 import { useWeekNavigation } from '@/view-models/use-week-navigation';
 
 /** The meal plan for one week at a time, starting with the current week. */
@@ -16,6 +17,7 @@ export function useWeekPlan() {
   // Dinners are added in the "Add dinner" screen and from recipes, so refresh on return.
   const { reload } = plan;
   useReloadOnRefocus(reload);
+  useReloadOnSync(reload);
 
   const todayKey = toDateKey(week.today);
   const entries = plan.data ?? [];

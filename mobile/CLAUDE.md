@@ -34,6 +34,12 @@ Run lint, type check and tests before considering a task done.
   - **Talk to our API only through `ApiClient`** (`src/services/api-client.ts`, from `useSession().client`). It adds the access token, refreshes it once on `token_expired`, and signs out locally when the login is no longer valid. It throws `ApiRequestError` (with the API's `code`) or `NetworkError`.
   - Tokens and the session are stored with `expo-secure-store` behind the `AuthStorage` interface (`src/services/auth-storage.ts`). Tests use `createMemoryAuthStorage()` from `jest/`.
   - The API address is `process.env.EXPO_PUBLIC_API_URL`, from `mobile/.env.local` (never committed, see `.env.example`). Write it out literally: Expo only inlines the literal form. Restart `npm start` after changing it.
+- **Sync**: `SyncProvider` (`src/view-models/sync.tsx`) wraps the tabs in `(app)/_layout.tsx`, so it runs exactly while signed in. Screens never call it; they keep reading and writing SQLite.
+  - It runs `syncNow()` (`src/services/sync.ts`: push, then pull) on start, when the app returns to the front, within 5 seconds of a local change (it polls `hasRowsToPush`), and every 60 seconds. Only one sync runs at a time.
+  - `src/repositories/sync.ts` holds the sync SQL for all six tables, from one column list (API field ↔ column). Pulled rows are applied in one transaction with `PRAGMA defer_foreign_keys = ON`, because pages can deliver children before parents, and they never overwrite a row that still has `needs_push = 1`.
+  - **View models that show household data call `useReloadOnSync(reload)`** next to `useReloadOnRefocus(reload)`, so they reload when a sync brings in others' changes.
+  - `useSync()` gives `status` (`idle`/`syncing`/`offline`/`error`), `lastSyncedAt` and `sync()`.
+  - The app has its own types for the API's sync data (`src/types/sync.ts`), mirroring `api/src/types/sync.ts`. Change both together.
 - **Tabs**: Each tab is a folder in `src/app/(app)/` with its own `_layout.tsx` (a `Stack`) and `index.tsx`. The `(app)` group doesn't change URLs. Detail screens for a tab go in the same folder.
   - Recipes is the `(recipes)` route group, so its `index.tsx` is the app's start route `/`. Plan, List and Pantry are at `/plan`, `/list` and `/pantry`.
   - The tab bar is defined once in `src/constants/tabs.ts` (`TabRoutes`: route name, href, label, SF Symbol and Material icon). Add or change tabs there, not in the tab bar components.
