@@ -99,6 +99,56 @@ describe('saveRecipe', () => {
   });
 });
 
+describe('ingredient ids', () => {
+  async function activeIngredientIds(database = db): Promise<string[]> {
+    const rows = await database.getAllAsync<{ id: string }>(
+      'SELECT id FROM recipe_ingredients WHERE deleted_at IS NULL ORDER BY position'
+    );
+    return rows.map((row) => row.id);
+  }
+
+  it('stay the same when a recipe is saved again', async () => {
+    await saveRecipe(db, pasta, monday);
+    const first = await activeIngredientIds();
+
+    await saveRecipe(db, pasta, tuesday);
+
+    expect(await activeIngredientIds()).toEqual(first);
+    const total = await db.getFirstAsync<{ count: number }>('SELECT count(*) AS count FROM recipe_ingredients');
+    expect(total?.count).toBe(pasta.ingredients.length);
+  });
+
+  it('are the same on two devices, so a sync merges them instead of duplicating', async () => {
+    const otherDevice = createTestDatabase();
+    await initializeDatabase(otherDevice);
+
+    await saveRecipe(db, pasta);
+    await saveRecipe(otherDevice, pasta);
+
+    expect(await activeIngredientIds(otherDevice)).toEqual(await activeIngredientIds());
+    otherDevice.close();
+  });
+
+  it('removes ingredients the recipe no longer has, including old random ids', async () => {
+    await saveRecipe(db, pasta, monday);
+    // How versions before name-based ids stored an ingredient.
+    await db.runAsync(
+      `INSERT INTO recipe_ingredients (id, recipe_id, position, ingredient_name, measure, created_at, updated_at)
+       VALUES ('random-old-id', ?, 9, 'salt', '', ?, ?)`,
+      pasta.id,
+      monday.toISOString(),
+      monday.toISOString()
+    );
+
+    await saveRecipe(db, { ...pasta, ingredients: pasta.ingredients.slice(0, 2) }, tuesday);
+
+    const remaining = await db.getAllAsync<{ ingredient_name: string }>(
+      'SELECT ingredient_name FROM recipe_ingredients WHERE deleted_at IS NULL ORDER BY position'
+    );
+    expect(remaining.map((row) => row.ingredient_name)).toEqual(['penne rigate', 'garlic']);
+  });
+});
+
 describe('removeRecipe', () => {
   it('hides the recipe but keeps the row', async () => {
     await saveRecipe(db, pasta, monday);

@@ -6,6 +6,8 @@ import { CryptoDigestAlgorithm, digest } from 'expo-crypto';
  */
 export const IdNamespaces = {
   pantryItem: '3f0c8a52-6d1e-4b7a-9c35-2a8e41f7d0b6',
+  /** Keyed by recipe id + position: the same recipe saved on two devices gets the same ids. */
+  recipeIngredient: 'd8d7320c-4db8-43e9-a6f7-d02946c39554',
   /** Keyed by the week's Monday date key: one shopping list per week. */
   shoppingList: '85c87aaa-ef3f-435c-abf0-f1e760656f1a',
   /** Keyed by list id + lowercased ingredient name: one line per ingredient per list. */

@@ -57,6 +57,7 @@ describe('initializeDatabase', () => {
       'recipes',
       'shopping_list_items',
       'shopping_lists',
+      'sync_state',
     ]);
     expect(await schemaVersion()).toBe(Migrations.length);
   });

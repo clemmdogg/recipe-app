@@ -156,13 +156,21 @@ The plan is to build this after the pantry and shopping list work locally. Check
 **What this means for code written now**
 
 - Keep household data sync-ready (UUIDs, timestamps, soft deletes), as the data layer rules require.
-- Don't add `user_id` or `household_id` columns to local tables yet. How ownership is stored gets decided together with the backend.
+- Local tables have no `user_id` or `household_id` column (decided). The local database only ever holds the signed-in user's household, and the API takes the household from the login, so the app never sends one.
 - Make changes per row, e.g. tick off one item or remove one entry. Don't rewrite whole lists, so edits from different family members can be merged.
 - Keep all data access in `src/repositories/` and `src/services/`, and open the database only in the root layout's `SQLiteProvider`. Then auth, the household database and sync can be added in one place.
 
-**Known issue to fix when building sync**
+**Decided: connecting the app (in progress)**
 
-- `saveRecipe` gives a recipe's ingredients new random UUIDs each time it is saved. If two members save the same recipe offline, the merge would duplicate its ingredients. Switch to name-based ids (recipe id + position), as pantry items already use.
+The plan, approved by the student, in five steps, each tested on the phone and committed separately:
+
+1. ~~Local database ready for sync~~ Done: migration 003 (`change_number`, `needs_push`, triggers, `sync_state`) and name-based recipe ingredient ids.
+2. Login: `expo-secure-store` for tokens, `services/api-client.ts` (refreshes on `token_expired`), `services/auth.ts`, sign-in and sign-up screens, all other screens behind login. The API URL is `EXPO_PUBLIC_API_URL` in `mobile/.env` (the computer's Wi-Fi IP while developing).
+3. Sync: `services/sync.ts` pushes rows with `needs_push = 1`, then pulls all pages and applies them in one transaction, then refreshes screens. Runs on app start, on returning to the app, and a few seconds after a change. A pulled row doesn't overwrite a local row that still needs pushing; a row rejected as `deleted_on_server` is deleted locally.
+4. The Household tab: name, members, invite (share sheet), join with code (with data loss warning), leave, remove member, sign out (warns about unsynced changes), delete account, sync status. Switching household empties the local data and pulls the new household's.
+5. Optional: remove the web code.
+
+- **Data from before login is uploaded** to the household on the first sync (the student's choice). Migration 003 marks all existing rows `needs_push = 1`.
 
 ## Tech stack
 
@@ -230,7 +238,7 @@ The student wants the code **loosely coupled**: each part knows as little as pos
 
 - Never write SQL inside components or view models; always go through functions in `src/repositories/`
 - Use UUIDs as primary keys (no auto-increment), except recipes, which use `idMeal`
-  - Rows with a natural key use a name-based UUID from `nameBasedUuid(IdNamespaces.x, key)` in `src/utils/ids.ts`, so the same row created on two devices merges on sync. Pantry items are keyed by their lowercased ingredient name.
+  - Rows with a natural key use a name-based UUID from `nameBasedUuid(IdNamespaces.x, key)` in `src/utils/ids.ts`, so the same row created on two devices merges on sync. Pantry items are keyed by their lowercased ingredient name, recipe ingredients by recipe id + position.
   - Adding a row that was soft-deleted restores it: upsert on the id and clear `deleted_at`. Don't insert a new row.
   - Every other row gets `randomUUID()`.
 - **Shopping lists are derived, not stored.** There is one list per week (Monday to Sunday).
@@ -243,6 +251,11 @@ The student wants the code **loosely coupled**: each part knows as little as pos
 - **Exception:** the `ingredients` table is a cache of TheMealDB's ingredient list, not household data.
   - It is keyed by name, has only `updated_at`, and is never synced.
   - `useIngredientCatalog` downloads it once and refreshes it every 30 days.
+- **Exception:** `sync_state` is device bookkeeping (e.g. the last pull's cursor), a key/value table that is never synced.
+- **Sync columns** on the six synced tables (`SyncedTables` in `src/db/migrations/003-sync.ts`):
+  - `needs_push = 1` means this device changed the row and hasn't uploaded it. **Triggers set it automatically** on every insert and update the app makes, so repository functions never touch it.
+  - `change_number` is the server's number for the row, written only when applying pulled rows. That is how the triggers tell pulled rows apart: a pull always writes a new `change_number`, the app never does.
+  - Clearing `needs_push` after a push changes the flag itself, so the triggers leave it alone.
 - Every table has `created_at`, `updated_at` and `deleted_at` (soft deletes)
 - Schema changes go through numbered migrations, never edit an existing migration
 - Use parameterized queries only
