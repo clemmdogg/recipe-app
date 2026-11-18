@@ -118,6 +118,49 @@ cd ~/recipe-app/deploy
 docker compose up -d --build                 # rebuilds only what changed; the database stays
 ```
 
+## Backups
+
+`backup.sh` saves a copy of the whole database in `~/backups` and keeps the last 7 days.
+
+Set it up once, on the server:
+
+```bash
+~/recipe-app/deploy/backup.sh                # take a backup now, to check it works
+crontab -e                                   # choose nano if asked, and add this line at the bottom:
+```
+
+```
+30 3 * * * /home/deploy/recipe-app/deploy/backup.sh >> /home/deploy/backups/backup.log 2>&1
+```
+
+That runs it every night at 3:30 (server time, UTC). `~/backups/backup.log` shows each run.
+
+**Test a backup** without touching the real database: restore it into a separate one and count the users.
+
+```bash
+cd ~/recipe-app/deploy
+latest=$(ls -t ~/backups/recipe_app-*.dump | head -1)
+docker compose exec -T db createdb -U recipe_app restore_test
+docker compose exec -T db pg_restore -U recipe_app -d restore_test --no-owner < "$latest"
+docker compose exec -T db psql -U recipe_app -d restore_test -c "SELECT count(*) FROM users"
+docker compose exec -T db dropdb -U recipe_app restore_test
+```
+
+**Keep a copy off the server**, in case the server itself is lost. On your computer:
+
+```powershell
+scp "deploy@SERVER-IP:~/backups/recipe_app-*.dump" .
+```
+
+**Restore for real** (this replaces all data in the database with the backup):
+
+```bash
+cd ~/recipe-app/deploy
+docker compose stop api
+docker compose exec -T db pg_restore -U recipe_app -d recipe_app --clean --if-exists --no-owner < ~/backups/BACKUP-FILE.dump
+docker compose start api
+```
+
 ## Useful commands
 
 ```bash

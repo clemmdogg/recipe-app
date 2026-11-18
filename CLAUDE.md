@@ -24,7 +24,7 @@ The API has health, login, accounts, household, invites and sync, with tests. Wh
 1. ~~Login: signup, login, refresh, logout, delete account~~ Done
 2. ~~Household and invites~~ Done
 3. ~~Sync~~ Done
-4. Docker and Caddy on the VPS: the files are in `deploy/` (see `deploy/README.md`), the server is set up and DNS points at it. Left: get the code onto the server (a private GitHub repository) and start it.
+4. ~~Docker and Caddy on the VPS~~ Done: live at https://recipes.clemdev.dk (web app) and https://api.recipes.clemdev.dk (API). The code is in a private GitHub repository; the server pulls it with a read-only deploy key. Updating: push, then on the server `git pull` and `docker compose up -d --build` in `deploy/` (see `deploy/README.md`).
 
 Then connect the app (see "Changes needed in the app" in `api/docs/api-design.md`).
 

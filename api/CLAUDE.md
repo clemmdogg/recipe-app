@@ -9,7 +9,8 @@ The self-built REST API for the recipe app: accounts, households and sync. **The
   - login: `POST /v1/auth/signup`, `login`, `refresh`, `logout`, `GET /v1/me` and `DELETE /v1/me`, the access token check and rate limiting
   - household and invites: `GET`/`PATCH /v1/household`, `POST /v1/household/invites`, `POST /v1/household/leave`, `DELETE /v1/household/members/:userId`, `GET /v1/invites/:code` and `POST /v1/invites/:code/accept`
   - sync: `GET /v1/changes` (pull) and `POST /v1/changes` (push)
-- **Deployment:** `api/Dockerfile`, and `deploy/` (Docker Compose with Postgres, the API and Caddy, the `Caddyfile`, and `README.md` with every step). The server (Contabo VPS, Ubuntu 24.04, user `deploy`, SSH keys only, ufw, Docker) is set up, and DNS for `recipes.clemdev.dk` and `api.recipes.clemdev.dk` points at it. Next: get the code onto the server and start it.
+- **Deployment:** `api/Dockerfile`, and `deploy/` (Docker Compose with Postgres, the API and Caddy, the `Caddyfile`, and `README.md` with every step). The server (Contabo VPS, Ubuntu 24.04, user `deploy`, SSH keys only, ufw, Docker) is set up, and DNS for `recipes.clemdev.dk` and `api.recipes.clemdev.dk` points at it. It is live: https://api.recipes.clemdev.dk. The server pulls the code from a private GitHub repository with a read-only deploy key; update with `git pull` and `docker compose up -d --build` in `~/recipe-app/deploy`.
+  - The Dockerfiles install npm 11.6.1 (`NPM_VERSION`), the same as on the development computer: npm 10 in the `node:22` image reads the lock file differently and refuses `npm ci`. Keep them in step if npm is upgraded locally.
 
 ## Commands
 
