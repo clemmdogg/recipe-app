@@ -28,7 +28,7 @@ npm start          # run the compiled build
 Run lint, typecheck and tests before considering a task done.
 
 - API documentation generated from the Zod schemas: http://localhost:3000/documentation while `npm run dev` runs.
-- `.env` (never committed) holds `DATABASE_URL`, `TEST_DATABASE_URL`, `HOST`, `PORT`, `JWT_SECRET`, `TRUST_PROXY` and `INVITE_LINK_BASE_URL`. `.env.example` shows the format. `src/config.ts` validates them at startup.
+- `.env` (never committed) holds `DATABASE_URL`, `TEST_DATABASE_URL`, `HOST`, `PORT`, `JWT_SECRET`, `TRUST_PROXY`, `INVITE_LINK_BASE_URL` and `CORS_ORIGINS`. `.env.example` shows the format. `src/config.ts` validates them at startup.
 - To try protected routes on the documentation page: sign up or log in there, copy `accessToken`, click "Authorize" and paste it.
 
 ## Local setup
@@ -42,7 +42,7 @@ Run lint, typecheck and tests before considering a task done.
 - Fastify 5 with `fastify-type-provider-zod` (Zod 4) for validation, response serialization and typed requests
 - `pg` (node-postgres) with plain parameterized SQL
 - `@fastify/swagger` and `@fastify/swagger-ui` for the documentation page
-- `argon2` (argon2id) for passwords, `jose` for access tokens (HS256 JWT), `@fastify/rate-limit`
+- `argon2` (argon2id) for passwords, `jose` for access tokens (HS256 JWT), `@fastify/rate-limit`, `@fastify/cors` (the app also runs in a browser; allowed addresses in `CORS_ORIGINS`)
 - TypeScript 6 in strict mode, ES modules (`"type": "module"`)
 - Vitest for tests, `tsx` for running TypeScript in development
 - TypeScript 7 exists, but `typescript-eslint` only supports up to 6.0, so stay on `~6.0`

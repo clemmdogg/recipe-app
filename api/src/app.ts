@@ -1,3 +1,4 @@
+import fastifyCors from '@fastify/cors';
 import fastifyRateLimit from '@fastify/rate-limit';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
@@ -31,6 +32,8 @@ export type AppOptions = {
   trustProxy?: boolean;
   /** Invite links are `${inviteLinkBaseUrl}/${code}`. */
   inviteLinkBaseUrl?: string;
+  /** Web addresses allowed to call the API from a browser, e.g. "http://localhost:8081". */
+  corsOrigins?: string[];
   logger?: FastifyServerOptions['logger'];
 };
 
@@ -44,6 +47,7 @@ export async function buildApp({
   authRateLimit = { max: 10, timeWindow: '1 minute' },
   trustProxy = false,
   inviteLinkBaseUrl = 'http://localhost:3000/join',
+  corsOrigins = [],
   logger = false,
 }: AppOptions) {
   const app = Fastify({ logger, trustProxy }).withTypeProvider<ZodTypeProvider>();
@@ -52,6 +56,15 @@ export async function buildApp({
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   registerErrorHandlers(app);
+
+  // A browser only lets a web page call an API on another address if the API allows that page's
+  // address. The app sends its token in the Authorization header, not in cookies, so no credentials.
+  await app.register(fastifyCors, {
+    origin: corsOrigins,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 600,
+  });
 
   // Off by default; only routes with `config.rateLimit` are limited.
   await app.register(fastifyRateLimit, { global: false });

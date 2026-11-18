@@ -41,7 +41,7 @@ The API is a self-built RESTful API in TypeScript on Node.js, with a PostgreSQL 
 | API documentation page | `@fastify/swagger` and `@fastify/swagger-ui`, generated from the Zod schemas |
 | Rate limiting | `@fastify/rate-limit`, on signup, login and refresh |
 
-The app runs on phones and tablets only. There is no web version, so the API doesn't need CORS.
+The app also runs in a web browser. A browser only lets a web page call an API on another address if the API allows that page's address (CORS), so the API allows the web app's address with `@fastify/cors`. The addresses are a setting (`CORS_ORIGINS`). Phones don't use CORS.
 
 ### Layers
 
@@ -508,7 +508,8 @@ Repositories always take the household id from the request, never from the reque
 
 ### In the app
 
-- Tokens are stored with `expo-secure-store` (the iOS Keychain and Android Keystore). This is one reason there is no web version: browsers have no equally safe place to keep them.
+- On phones, tokens are stored with `expo-secure-store` (the iOS Keychain and Android Keystore).
+- In the browser, they are stored in `localStorage`, as Expo's own authentication guide does. JavaScript on the page can read it, so a cross-site scripting (XSS) bug could leak the tokens. The risk is accepted: the app never shows HTML written by users, and a leaked access token stops working after 15 minutes. The safer alternative, httpOnly cookies, would need CSRF protection and bigger API changes.
 - When a request gets `401 token_expired`, the app calls `/auth/refresh` once and repeats the request. If the refresh also fails, it shows the sign-in screen.
 
 ## 7. HTTPS (SSL/TLS)
@@ -545,5 +546,5 @@ To sync, the app needs a few changes. These come after the API exists:
 - **When the creator leaves** or deletes their account, the member who has been in the household the longest becomes the new creator.
 - **Users can delete their account** (`DELETE /v1/me`).
 - **Rate limiting** with `@fastify/rate-limit` on signup, login and token refresh, e.g. 10 attempts per minute per IP address.
-- **No web version.** The app runs on phones and tablets only.
+- **The app also runs in a web browser** (changed from "phones and tablets only"). Tokens are kept in `localStorage` there, and the API allows the web app's address with CORS.
 - **Invite links open a simple web page** showing the code, which the user types into the app.

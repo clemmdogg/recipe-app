@@ -14,6 +14,7 @@ const app = await buildApp({
   accessTokenSecret: config.JWT_SECRET,
   trustProxy: config.TRUST_PROXY,
   inviteLinkBaseUrl: config.INVITE_LINK_BASE_URL,
+  corsOrigins: config.CORS_ORIGINS,
   logger: true,
 });
 await app.listen({ host: config.HOST, port: config.PORT });

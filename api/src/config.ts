@@ -12,6 +12,18 @@ const ConfigSchema = z.object({
   TRUST_PROXY: z.stringbool().default(false),
   // Invite links are `${INVITE_LINK_BASE_URL}/${code}`. On the server: https://<domain>/join
   INVITE_LINK_BASE_URL: z.url().default('http://localhost:3000/join'),
+  // Web addresses the app runs on in a browser, comma-separated. Only these may call the API from
+  // a browser (CORS). Phones don't use CORS, so they work regardless.
+  CORS_ORIGINS: z
+    .string()
+    .default('http://localhost:8081')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter((origin) => origin !== '')
+    )
+    .pipe(z.array(z.url())),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
