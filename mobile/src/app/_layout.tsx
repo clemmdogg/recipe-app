@@ -39,6 +39,8 @@ function RootNavigator() {
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="sign-up" options={{ headerShown: true, title: '', headerTransparent: true }} />
       </Stack.Protected>
+      {/* Invite links open this whether or not someone is signed in. */}
+      <Stack.Screen name="join/[code]" options={{ headerShown: true, title: 'Invite' }} />
     </Stack>
   );
 }

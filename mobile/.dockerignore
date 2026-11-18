@@ -1,0 +1,8 @@
+# Keep the build small, and never copy local settings (like the development API address) into it.
+node_modules
+.expo
+dist
+ios
+android
+.env
+.env.*

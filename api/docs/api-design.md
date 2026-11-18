@@ -271,7 +271,7 @@ Response **201**:
 
 The code is 8 random characters from an alphabet without look-alikes (no `0`/`O`, `1`/`I`), so it is easy to type in by hand. The app shares `url` with the system share sheet.
 
-The link doesn't open the app directly. It opens a simple web page that shows the code and tells the person to install the app and enter the code under Household → Join with code. Caddy serves this page as a static HTML file for every `/join/…` address, and a few lines of JavaScript read the code from the address. This avoids the extra setup that opening the app from a link would need (Android App Links).
+The link opens the web version of the app, which runs on the same address. Its `/join/<code>` page works without signing in: it shows the code and explains how to join. A signed-in user can go straight to Household → Join with code with the code filled in. On a phone, the person enters the code in the app under Household → Join with code. This avoids the extra setup that opening the phone app from a link would need (Android App Links).
 
 #### `GET /v1/invites/{code}`
 

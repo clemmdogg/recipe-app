@@ -9,7 +9,7 @@ The self-built REST API for the recipe app: accounts, households and sync. **The
   - login: `POST /v1/auth/signup`, `login`, `refresh`, `logout`, `GET /v1/me` and `DELETE /v1/me`, the access token check and rate limiting
   - household and invites: `GET`/`PATCH /v1/household`, `POST /v1/household/invites`, `POST /v1/household/leave`, `DELETE /v1/household/members/:userId`, `GET /v1/invites/:code` and `POST /v1/invites/:code/accept`
   - sync: `GET /v1/changes` (pull) and `POST /v1/changes` (push)
-- **Next:** Docker and Caddy on the VPS, including the static `/join/<code>` page (needs a domain name first). Then connect the app.
+- **Deployment:** `api/Dockerfile`, and `deploy/` (Docker Compose with Postgres, the API and Caddy, the `Caddyfile`, and `README.md` with every step). The server (Contabo VPS, Ubuntu 24.04, user `deploy`, SSH keys only, ufw, Docker) is set up, and DNS for `recipes.clemdev.dk` and `api.recipes.clemdev.dk` points at it. Next: get the code onto the server and start it.
 
 ## Commands
 

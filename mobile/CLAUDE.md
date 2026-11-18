@@ -84,7 +84,7 @@ Run lint, type check and tests before considering a task done.
   - Weeks start on Monday, and display formatting uses `en-GB`.
   - Tests run in `Europe/Copenhagen` (set in `jest/setup.ts`).
 - **React Compiler is enabled** (`experiments.reactCompiler`), so manual `useMemo`/`useCallback` is usually unnecessary.
-- **Web output is `server`** (`app.json` → `web.output`), which allows API routes (`+api.ts`) in `src/app/`.
+- **Web output is `single`** (`app.json` → `web.output`): the web version is one page (`index.html`) plus files, which Caddy serves. There are no API routes (`+api.ts`); the API is our own server in `../api/`.
 
 # Recipe App
 
@@ -97,7 +97,7 @@ A cloud API and database will be added later, so local data must be sync-ready.
   - In the browser, the login is kept in `localStorage`. The student accepted the trade-off: an XSS bug could leak tokens, but the app never renders users' HTML and access tokens last 15 minutes. httpOnly cookies were rejected as too much API work.
   - The API allows the web app's address with CORS (`CORS_ORIGINS` in `api/.env`). Locally that is the Expo dev server, `http://localhost:8081`.
   - Test web changes with `npm run web`. `npx expo export --platform web` checks that the web build compiles.
-  - On the server, Caddy will also serve the web build (see "Decided: backend and login" → Hosting). `web.output` is `server` today and needs to become `single` or `static` for Caddy to serve it as files.
+  - On the server, Caddy serves the web build: `mobile/Dockerfile` builds it with `EXPO_PUBLIC_API_URL` set to the server's API and puts it in the Caddy image. See `deploy/README.md`.
 
 - The school requires a **self-built RESTful API** and **SSL (HTTPS)**. The API is part of what gets graded, so don't replace it with a backend service that generates the API, such as Supabase or Firebase.
 - TheMealDB's free test key `1` is allowed "for educational use", so no supporter key is needed.
@@ -117,7 +117,7 @@ The plan is to build this after the pantry and shopping list work locally. Check
   - **Joining** another household with an invite moves the user there. If they were the only member of a household that has data, warn first that the data will be deleted.
   - **Leaving** gives the user a new empty household. A household with no members left is deleted.
 - **Invites** are a link containing a code, shared via the system share sheet. They expire after 7 days.
-  - The link opens a simple web page that shows the code, and the user types it into the app ("Join with code"). No Android App Links or deep linking.
+  - The link (`https://<web address>/join/<code>`) opens `src/app/join/[code].tsx` in the web app, which works without signing in. It shows the code; signed in, "Join the household" opens Household → Join with code with the code filled in. No Android App Links or deep linking.
 - **Permissions:** every member can edit all data and invite others. Only the household's creator can remove other members.
   - **When the creator leaves** (or deletes their account), the member who has been in the household the longest becomes the new creator.
 - **Deleting an account:** users can delete their account in the Household tab. It needs their password. If they were the last member, the household and its data are deleted too.

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { ModalForm } from '@/components/household/modal-form';
@@ -12,7 +12,9 @@ import { useJoinHousehold } from '@/view-models/use-join-household';
 
 export default function JoinHouseholdScreen() {
   const theme = useTheme();
-  const form = useJoinHousehold();
+  // An invite link (/join/<code>) opens this screen with the code filled in.
+  const { code } = useLocalSearchParams<{ code?: string }>();
+  const form = useJoinHousehold(code ?? '');
   const preview = form.preview;
 
   const join = async () => {

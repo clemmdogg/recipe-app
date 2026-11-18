@@ -1,0 +1,65 @@
+# Everything that runs on the server: Postgres, the API and Caddy.
+# Start or update it from this folder with:  docker compose up -d --build
+# Settings and secrets come from deploy/.env (copy .env.example). See README.md.
+
+services:
+  # The database. Not reachable from the internet: only the API talks to it, inside Docker.
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: recipe_app
+      POSTGRES_USER: recipe_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      # Postgres 18 keeps its data in a version folder under /var/lib/postgresql.
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U recipe_app -d recipe_app']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # The API. Only Caddy can reach it; it runs the database migrations when it starts.
+  api:
+    build: ../api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://recipe_app:${POSTGRES_PASSWORD}@db:5432/recipe_app
+      HOST: 0.0.0.0
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in deploy/.env}
+      # Requests come through Caddy, so take the phone's address from Caddy's headers.
+      TRUST_PROXY: 'true'
+      INVITE_LINK_BASE_URL: https://${WEB_DOMAIN}/join
+      CORS_ORIGINS: https://${WEB_DOMAIN}
+
+  # Caddy: HTTPS for both addresses, the web app's files, and the way in to the API.
+  caddy:
+    build:
+      context: ../mobile
+      args:
+        EXPO_PUBLIC_API_URL: https://${API_DOMAIN:?Set API_DOMAIN in deploy/.env}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      WEB_DOMAIN: ${WEB_DOMAIN:?Set WEB_DOMAIN in deploy/.env}
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live here, so they survive restarts and Let's Encrypt isn't asked again.
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,130 @@
+# Deploying to the server
+
+How the recipe app runs on the Contabo VPS, and how to set it up and update it.
+
+## What runs where
+
+```
+ Phone / browser
+       │  HTTPS
+       ▼
+ ┌──────────── Contabo VPS (Ubuntu) ──────────────────────────┐
+ │  Firewall: only ports 22 (SSH), 80 and 443 are open         │
+ │                                                             │
+ │  Caddy container  (ports 80 and 443)                        │
+ │    recipes.clemdev.dk      → the web app's files            │
+ │    api.recipes.clemdev.dk  → API container                  │
+ │                                                             │
+ │  API container    (port 3000, only reachable by Caddy)      │
+ │  Postgres container (only reachable by the API)             │
+ └─────────────────────────────────────────────────────────────┘
+```
+
+- **Caddy** gets free HTTPS certificates from Let's Encrypt for both addresses, renews them, and redirects `http://` to `https://`.
+- **The API** runs its database migrations when it starts.
+- **The web app** is built into the Caddy image (`mobile/Dockerfile`), with the API address written into it.
+- Files: `docker-compose.yml` (the three containers), `Caddyfile` (Caddy's settings), `.env` (addresses and secrets, never committed; see `.env.example`).
+
+## 1. Set up the server (once)
+
+On your computer, in PowerShell:
+
+```powershell
+ssh-keygen -t ed25519 -C "clemdev-server"   # make an SSH key; choose a passphrase
+ssh root@SERVER-IP                           # first login with the root password from Contabo
+```
+
+On the server, as `root`:
+
+```bash
+apt update && apt full-upgrade -y            # install all updates
+adduser deploy                               # your own user (choose a password)
+usermod -aG sudo deploy                      # allow it to run admin commands with sudo
+```
+
+On your computer, copy your public key to the new user:
+
+```powershell
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh deploy@SERVER-IP "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+ssh deploy@SERVER-IP                         # must log in with the key, without the server password
+```
+
+Only when that works, turn off password and root login. On the server:
+
+```bash
+sudo tee /etc/ssh/sshd_config.d/99-hardening.conf > /dev/null <<'EOF'
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+EOF
+sudo systemctl restart ssh
+```
+
+Firewall and automatic security updates:
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443
+sudo ufw enable
+sudo apt install -y unattended-upgrades
+sudo dpkg-reconfigure -plow unattended-upgrades   # answer Yes
+```
+
+Docker, from Docker's own package repository (see https://docs.docker.com/engine/install/ubuntu/):
+
+```bash
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker deploy               # use docker without sudo (log out and in again)
+```
+
+Note: Docker opens container ports in the firewall by itself. That is fine here, because only Caddy publishes ports (80 and 443); Postgres and the API publish none.
+
+## 2. DNS (once)
+
+At the domain registrar, create two **A records** pointing at the server's IP address:
+
+| Name | Type | Value |
+|---|---|---|
+| `recipes` | A | SERVER-IP |
+| `api.recipes` | A | SERVER-IP |
+
+Check from your computer that they work before starting Caddy: `nslookup recipes.clemdev.dk`.
+
+## 3. Start the app
+
+Get the code onto the server into `~/recipe-app`, then:
+
+```bash
+cd ~/recipe-app/deploy
+cp .env.example .env
+openssl rand -base64 48                      # run twice: one for POSTGRES_PASSWORD, one for JWT_SECRET
+nano .env                                    # fill in the two secrets; check the addresses
+docker compose up -d --build                 # build and start everything
+docker compose logs -f caddy                 # watch Caddy get the certificates (Ctrl+C to stop watching)
+```
+
+Then open https://api.recipes.clemdev.dk/v1/health (should show `{"status":"ok"}`) and https://recipes.clemdev.dk.
+
+## 4. Update the app
+
+After new code is on the server:
+
+```bash
+cd ~/recipe-app/deploy
+docker compose up -d --build                 # rebuilds only what changed; the database stays
+```
+
+## Useful commands
+
+```bash
+docker compose ps                            # what is running
+docker compose logs -f api                   # the API's log
+docker compose restart api                   # restart one container
+docker compose exec db psql -U recipe_app    # open the database (\q to quit)
+docker compose down                          # stop everything (the data stays in Docker volumes)
+```
+
+## The phone app
+
+Build the Android app with `EXPO_PUBLIC_API_URL=https://api.recipes.clemdev.dk`, so it talks to the server instead of your computer.

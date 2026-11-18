@@ -1,0 +1,39 @@
+# Caddy is the only thing reachable from the internet (ports 80 and 443). For each address below
+# it gets a free HTTPS certificate from Let's Encrypt, renews it before it expires, and sends
+# http:// visitors to https://. The addresses come from deploy/.env.
+
+# Settings shared by both sites.
+(security_headers) {
+	header {
+		# Browsers only use HTTPS for this site from now on, even if someone types http://.
+		Strict-Transport-Security "max-age=31536000"
+		# Don't let browsers guess file types, and don't send the full address to other sites.
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Don't tell visitors which web server this is.
+		-Server
+	}
+}
+
+# The API: everything is passed on to the API container.
+{$API_DOMAIN} {
+	import security_headers
+	encode zstd gzip
+	reverse_proxy api:3000
+}
+
+# The web version of the app, built into this image in /srv.
+{$WEB_DOMAIN} {
+	import security_headers
+	header {
+		# SQLite in the browser needs these (SharedArrayBuffer), like metro.config.js in development.
+		Cross-Origin-Embedder-Policy "credentialless"
+		Cross-Origin-Opener-Policy "same-origin"
+	}
+	encode zstd gzip
+	root * /srv
+	# The app is one page: addresses like /plan or /join/K7MQ-2XPA all get index.html, and the
+	# app's router shows the right screen.
+	try_files {path} /index.html
+	file_server
+}

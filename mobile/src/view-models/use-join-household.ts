@@ -10,10 +10,11 @@ import { useSync } from '@/view-models/sync';
  * "Join with code": look up the invite, show what joining means, then join. Everything on this
  * device is uploaded before looking up, so the server's data loss warning is accurate.
  */
-export function useJoinHousehold() {
+export function useJoinHousehold(initialCode = '') {
   const session = useSession();
   const syncing = useSync();
-  const [code, setCode] = useState('');
+  // Filled in when coming from an invite link.
+  const [code, setCode] = useState(initialCode);
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
