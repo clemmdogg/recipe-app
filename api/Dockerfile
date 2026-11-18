@@ -1,9 +1,15 @@
 # The API as a container image, built by deploy/docker-compose.yml.
 # Debian-based (not Alpine), because argon2 ships ready-built binaries for it.
 
+# Use the same npm as on the development computer: an older npm reads package-lock.json
+# differently and refuses to install ("not in sync").
+ARG NPM_VERSION=11.6.1
+
 # 1. Install all dependencies and compile TypeScript to JavaScript.
 FROM node:22-bookworm-slim AS build
+ARG NPM_VERSION
 WORKDIR /app
+RUN npm install -g npm@${NPM_VERSION}
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY tsconfig.json tsconfig.build.json ./
@@ -12,8 +18,10 @@ RUN npm run build
 
 # 2. The image that runs: only production dependencies and the compiled code.
 FROM node:22-bookworm-slim
+ARG NPM_VERSION
 ENV NODE_ENV=production
 WORKDIR /app
+RUN npm install -g npm@${NPM_VERSION}
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist

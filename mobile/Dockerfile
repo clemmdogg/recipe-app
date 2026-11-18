@@ -1,9 +1,15 @@
 # The web version of the app, served by Caddy. Built by deploy/docker-compose.yml.
 # Caddy's settings (HTTPS, headers, the API proxy) are in deploy/Caddyfile.
 
+# Use the same npm as on the development computer: an older npm reads package-lock.json
+# differently and refuses to install ("not in sync").
+ARG NPM_VERSION=11.6.1
+
 # 1. Build the web version as plain files (web.output "single" in app.json).
 FROM node:22-bookworm-slim AS build
+ARG NPM_VERSION
 WORKDIR /app
+RUN npm install -g npm@${NPM_VERSION}
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .

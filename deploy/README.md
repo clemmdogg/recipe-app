@@ -98,8 +98,11 @@ Get the code onto the server into `~/recipe-app`, then:
 ```bash
 cd ~/recipe-app/deploy
 cp .env.example .env
-openssl rand -base64 48                      # run twice: one for POSTGRES_PASSWORD, one for JWT_SECRET
-nano .env                                    # fill in the two secrets; check the addresses
+# Random secrets. Hex (0-9, a-f) because the password goes into a URL, where / and + would break it.
+sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 32)/" .env
+sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 48)/" .env
+chmod 600 .env                               # only you can read it
+nano .env                                    # check the addresses (don't share this file)
 docker compose up -d --build                 # build and start everything
 docker compose logs -f caddy                 # watch Caddy get the certificates (Ctrl+C to stop watching)
 ```
