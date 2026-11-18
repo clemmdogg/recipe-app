@@ -1,8 +1,9 @@
 import { router, Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { showMessage } from '@/components/dialogs';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingState } from '@/components/loading-state';
@@ -29,7 +30,7 @@ export function AddDinnerScreen({ date }: { date: DateKey }) {
         router.back();
       }
     } catch {
-      Alert.alert('Could not add to your plan', 'Please try again.');
+      showMessage('Could not add to your plan', 'Please try again.');
     }
   };
 

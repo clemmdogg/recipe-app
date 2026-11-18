@@ -8,6 +8,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { imageUrl } from '@/services/mealdb';
 import type { RecipeSummary } from '@/types/recipe';
+import { isHovered } from '@/utils/pressable';
 
 type RecipeCardProps = {
   recipe: RecipeSummary;
@@ -27,7 +28,12 @@ export function RecipeCard({ recipe, width, isSaved }: RecipeCardProps) {
       onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
       accessibilityRole="link"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}>
+      style={(state) => [
+        styles.card,
+        { width },
+        isHovered(state) && styles.hovered,
+        state.pressed && styles.pressed,
+      ]}>
       <View>
         <Image
           source={imageUrl(recipe.thumbnailUrl, 'medium')}
@@ -75,6 +81,9 @@ const styles = StyleSheet.create({
   },
   text: {
     gap: Spacing.half,
+  },
+  hovered: {
+    opacity: 0.85,
   },
   pressed: {
     opacity: 0.7,

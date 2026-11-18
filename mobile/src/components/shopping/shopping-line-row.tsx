@@ -8,16 +8,26 @@ import { useTheme } from '@/hooks/use-theme';
 import type { ShoppingLine } from '@/types/shopping-list';
 import { formatWeekday, fromDateKey } from '@/utils/dates';
 
+/**
+ * Side by side, "To buy" and "Already at home" rows get the same height (room for a name and two
+ * lines of detail), so they line up across the columns.
+ */
+export const AlignedRowMinHeight = 76;
+/** Section headings get the same height too, so the first rows start level. */
+export const AlignedHeadingMinHeight = 44;
+
 type ShoppingLineRowProps = {
   line: ShoppingLine;
   isChecked: boolean;
+  /** Use the shared row height, for the two-column layout. */
+  isAligned?: boolean;
   onToggle: () => void;
   /** Shown for lines added by hand, which can be removed. */
   onRemove?: () => void;
 };
 
 /** A shopping list line. Tapping anywhere on it ticks it off. */
-export function ShoppingLineRow({ line, isChecked, onToggle, onRemove }: ShoppingLineRowProps) {
+export function ShoppingLineRow({ line, isChecked, isAligned = false, onToggle, onRemove }: ShoppingLineRowProps) {
   const theme = useTheme();
   const detail = describeUses(line);
 
@@ -29,6 +39,7 @@ export function ShoppingLineRow({ line, isChecked, onToggle, onRemove }: Shoppin
       accessibilityLabel={detail ? `${line.name}, ${detail}` : line.name}
       style={({ pressed }) => [
         styles.row,
+        isAligned && styles.aligned,
         { backgroundColor: theme.backgroundElement },
         pressed && styles.pressed,
       ]}>
@@ -89,6 +100,10 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.one,
     paddingVertical: Spacing.one,
     borderRadius: Spacing.three,
+  },
+  aligned: {
+    minHeight: AlignedRowMinHeight,
+    justifyContent: 'center',
   },
   removeButton: {
     width: 44,

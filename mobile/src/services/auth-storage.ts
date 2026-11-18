@@ -25,7 +25,7 @@ const Keys = {
  * Keeps the login in the iOS Keychain or the Android Keystore, so other apps can't read the
  * tokens. Each value is stored on its own, because iOS can refuse values above about 2 KB.
  */
-export function createSecureAuthStorage(): AuthStorage {
+export function createAuthStorage(): AuthStorage {
   return {
     async getTokens() {
       const [accessToken, refreshToken] = await Promise.all([

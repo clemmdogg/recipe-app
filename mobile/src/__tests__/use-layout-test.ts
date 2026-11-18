@@ -1,4 +1,4 @@
-import { getLayout } from '@/hooks/use-layout';
+import { getGrid, getLayout, getPageFrame } from '@/hooks/use-layout';
 
 describe('getLayout', () => {
   it('treats a portrait phone as compact', () => {
@@ -34,5 +34,35 @@ describe('getLayout', () => {
 
   it('caps the grid at five columns', () => {
     expect(getLayout(1366, 1024).gridColumns).toBe(5);
+  });
+});
+
+describe('getPageFrame', () => {
+  const noSafeArea = { left: 0, right: 0 };
+
+  it('keeps the normal side padding on a phone', () => {
+    expect(getPageFrame(390, noSafeArea)).toEqual({ paddingLeft: 16, paddingRight: 16, contentWidth: 358 });
+  });
+
+  it('centers the content at its maximum width on a big screen', () => {
+    expect(getPageFrame(1632, noSafeArea, 1200)).toEqual({ paddingLeft: 216, paddingRight: 216, contentWidth: 1200 });
+  });
+
+  it('adds the safe area on the side of a notch', () => {
+    expect(getPageFrame(844, { left: 47, right: 0 }, 1200)).toMatchObject({ paddingLeft: 63, paddingRight: 16 });
+  });
+});
+
+describe('getGrid', () => {
+  it('fits as many columns as allowed, sharing the width', () => {
+    expect(getGrid(1200, { minItemWidth: 280, gap: 12, maxColumns: 7 })).toEqual({ columns: 4, itemWidth: 291 });
+  });
+
+  it('uses one column when even two would be too narrow', () => {
+    expect(getGrid(358, { minItemWidth: 280, gap: 12, maxColumns: 7 }).columns).toBe(1);
+  });
+
+  it('never goes above the maximum number of columns', () => {
+    expect(getGrid(3000, { minItemWidth: 260, gap: 8, maxColumns: 4 }).columns).toBe(4);
   });
 });

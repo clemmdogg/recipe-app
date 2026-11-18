@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { isHovered } from '@/utils/pressable';
 
 type SecondaryButtonProps = {
   label: string;
@@ -24,10 +25,10 @@ export function SecondaryButton({ label, onPress, tone = 'default', isBusy = fal
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ busy: isBusy, disabled: isBusy }}
-      style={({ pressed }) => [
+      style={(state) => [
         styles.button,
-        { backgroundColor: theme.backgroundElement },
-        (pressed || isBusy) && styles.pressed,
+        { backgroundColor: isHovered(state) ? theme.backgroundSelected : theme.backgroundElement },
+        (state.pressed || isBusy) && styles.pressed,
       ]}>
       {isBusy ? (
         <ActivityIndicator color={color} />

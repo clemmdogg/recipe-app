@@ -1,8 +1,6 @@
-import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { RecipeRow } from '@/components/plan/recipe-row';
+import { AddDinnerButton, PlannedDinner, TodayBadge } from '@/components/plan/plan-day-parts';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -15,11 +13,15 @@ type PlanDayCardProps = {
   onRemove: (entryId: string) => void;
 };
 
-/** One day of the plan: one dinner per row (picture left, name right), and an add button. */
+/**
+ * One day of the plan on a narrow screen: one dinner per row (picture left, name right), and an
+ * add button. Wide screens use PlanDayRow instead.
+ */
 export function PlanDayCard({ day, onAdd, onRemove }: PlanDayCardProps) {
   const theme = useTheme();
   const weekday = formatWeekday(day.date);
   const dayMonth = formatDayMonth(day.date);
+  const dayLabel = `${weekday} ${dayMonth}`;
 
   return (
     <View
@@ -32,25 +34,12 @@ export function PlanDayCard({ day, onAdd, onRemove }: PlanDayCardProps) {
           style={styles.title}
           accessible
           accessibilityRole="header"
-          accessibilityLabel={`${day.isToday ? 'Today, ' : ''}${weekday} ${dayMonth}`}>
+          accessibilityLabel={`${day.isToday ? 'Today, ' : ''}${dayLabel}`}>
           <ThemedText type="heading">{weekday}</ThemedText>
           <ThemedText themeColor="textSecondary">{dayMonth}</ThemedText>
-          {day.isToday && (
-            <View style={[styles.todayBadge, { backgroundColor: theme.text }]}>
-              <ThemedText type="smallBold" style={{ color: theme.background }}>
-                Today
-              </ThemedText>
-            </View>
-          )}
+          {day.isToday && <TodayBadge />}
         </View>
-        <Pressable
-          onPress={onAdd}
-          accessibilityRole="button"
-          accessibilityLabel={`Add dinner on ${weekday} ${dayMonth}`}
-          style={({ pressed }) => [styles.addButton, { backgroundColor: theme.background }, pressed && styles.pressed]}>
-          <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={18} tintColor={theme.text} />
-          <ThemedText type="smallBold">Add</ThemedText>
-        </Pressable>
+        <AddDinnerButton dayLabel={dayLabel} onPress={onAdd} />
       </View>
 
       {day.entries.length === 0 && (
@@ -59,26 +48,7 @@ export function PlanDayCard({ day, onAdd, onRemove }: PlanDayCardProps) {
         </ThemedText>
       )}
       {day.entries.map((entry) => (
-        <View key={entry.id} style={styles.entry}>
-          <Pressable
-            onPress={() => router.push({ pathname: '/plan/recipe/[id]', params: { id: entry.recipe.id } })}
-            accessibilityRole="link"
-            accessibilityLabel={entry.recipe.name}
-            style={({ pressed }) => [styles.entryLink, pressed && styles.pressed]}>
-            <RecipeRow recipe={entry.recipe} />
-          </Pressable>
-          <Pressable
-            onPress={() => onRemove(entry.id)}
-            accessibilityRole="button"
-            accessibilityLabel={`Remove ${entry.recipe.name} from ${weekday} ${dayMonth}`}
-            style={({ pressed }) => [styles.removeButton, pressed && styles.pressed]}>
-            <SymbolView
-              name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }}
-              size={24}
-              tintColor={theme.textSecondary}
-            />
-          </Pressable>
-        </View>
+        <PlannedDinner key={entry.id} entry={entry} dayLabel={dayLabel} onRemove={onRemove} />
       ))}
     </View>
   );
@@ -103,35 +73,5 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     columnGap: Spacing.two,
-  },
-  todayBadge: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
-    borderRadius: Spacing.two,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    minHeight: 44,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.five,
-  },
-  entry: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  entryLink: {
-    flex: 1,
-  },
-  removeButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

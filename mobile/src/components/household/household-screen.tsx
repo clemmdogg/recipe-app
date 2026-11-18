@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { confirmAction, showMessage } from '@/components/dialogs';
 import { AccountSection } from '@/components/household/account-section';
 import { InviteCard } from '@/components/household/invite-card';
 import { MembersSection } from '@/components/household/members-section';
@@ -33,7 +34,7 @@ export function HouseholdScreen() {
     try {
       await work();
     } catch (error) {
-      Alert.alert(failureTitle, describeHouseholdError(error));
+      showMessage(failureTitle, describeHouseholdError(error));
     } finally {
       setBusy(null);
     }
@@ -41,6 +42,7 @@ export function HouseholdScreen() {
 
   const shareInvite = (toShare: Invite) => {
     const name = vm.household.data?.name ?? vm.session?.household.name ?? 'our household';
+    // Some browsers have no share sheet; the code is on screen in the invite card anyway.
     Share.share({
       message: `Join "${name}" in the recipe app, so we share recipes, the meal plan, the shopping list and the pantry. Open Household → Join with code and enter ${toShare.code}, or open ${toShare.url}. The invite works for 7 days.`,
     }).catch(() => undefined);
@@ -59,43 +61,47 @@ export function HouseholdScreen() {
       'Could not create an invite'
     );
 
-  const onLeave = () =>
-    Alert.alert(
-      'Leave the household?',
-      "You get a new, empty household. The recipes, plan, lists and pantry stay with the others.",
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Leave', style: 'destructive', onPress: () => run('leave', vm.leave, 'Could not leave') },
-      ]
-    );
+  const onLeave = async () => {
+    const confirmed = await confirmAction({
+      title: 'Leave the household?',
+      message: 'You get a new, empty household. The recipes, plan, lists and pantry stay with the others.',
+      confirmLabel: 'Leave',
+      destructive: true,
+    });
+    if (confirmed) {
+      await run('leave', vm.leave, 'Could not leave');
+    }
+  };
 
-  const onRemove = (member: HouseholdMember) =>
-    Alert.alert(`Remove ${member.name}?`, `${member.name} gets a new, empty household of their own.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () =>
-          vm.remove(member.id).catch((error) => Alert.alert('Could not remove', describeHouseholdError(error))),
-      },
-    ]);
+  const onRemove = async (member: HouseholdMember) => {
+    const confirmed = await confirmAction({
+      title: `Remove ${member.name}?`,
+      message: `${member.name} gets a new, empty household of their own.`,
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (confirmed) {
+      vm.remove(member.id).catch((error) => showMessage('Could not remove', describeHouseholdError(error)));
+    }
+  };
 
   const onSignOut = () =>
     run(
       'signOut',
       async () => {
-        if (!(await vm.hasUnsyncedChanges())) {
+        const canLoseChanges = await vm.hasUnsyncedChanges();
+        const confirmed =
+          !canLoseChanges ||
+          (await confirmAction({
+            title: 'Sign out without uploading?',
+            message:
+              "Some changes on this device haven't been uploaded yet, so they will be lost. Connect to the internet first to keep them.",
+            confirmLabel: 'Sign out',
+            destructive: true,
+          }));
+        if (confirmed) {
           await vm.signOut();
-          return;
         }
-        Alert.alert(
-          'Sign out without uploading?',
-          "Some changes on this phone haven't been uploaded yet, so they will be lost. Connect to the internet first to keep them.",
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Sign out', style: 'destructive', onPress: () => void vm.signOut() },
-          ]
-        );
       },
       'Could not sign out'
     );

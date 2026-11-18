@@ -9,8 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is the mobile client of a recipe app (`recipe-app/mobile`), built on Expo SDK 58, React Native 0.88, React 19.3 and TypeScript 6.
 
 - **Working locally:** Recipes, Plan, List and Pantry are complete, with all data in a local SQLite database (`expo-sqlite`).
-- **Placeholder:** the Household tab, until login and the API exist.
-- **Next:** the self-built REST API in `../api/`, then login, household and sync. See "Planned: login and household sync" below.
+- **Connected to the API:** login, household (members, invites, joining, leaving) and background sync with the family. Runs on phones, tablets and in a browser.
+- **Next:** put the API and the web app on the VPS with Docker and Caddy (needs a domain name). See "Planned: login and household sync" below.
 
 ## Commands
 
@@ -32,7 +32,7 @@ Run lint, type check and tests before considering a task done.
 - **Login gate**: the root layout is a `Stack` with `Stack.Protected` guards. Signed in, it shows the `(app)` group, whose `_layout.tsx` renders `AppTabs`. Signed out, it shows `sign-in.tsx` and `sign-up.tsx`. Flipping the session switches between them, so screens never navigate there themselves.
   - `SessionProvider` / `useSession()` in `src/view-models/session.tsx` hold the session, the shared `ApiClient`, and `signIn`/`signUp`/`signOut`. The saved login is read at start, offline, while `SplashScreenController` keeps the splash screen up.
   - **Talk to our API only through `ApiClient`** (`src/services/api-client.ts`, from `useSession().client`). It adds the access token, refreshes it once on `token_expired`, and signs out locally when the login is no longer valid. It throws `ApiRequestError` (with the API's `code`) or `NetworkError`.
-  - Tokens and the session are stored with `expo-secure-store` behind the `AuthStorage` interface (`src/services/auth-storage.ts`). Tests use `createMemoryAuthStorage()` from `jest/`.
+  - Tokens and the session are stored behind the `AuthStorage` interface (`createAuthStorage()` in `src/services/auth-storage.ts`): with `expo-secure-store` on phones, and in `localStorage` in the browser (`auth-storage.web.ts`). Tests use `createMemoryAuthStorage()` from `jest/`.
   - The API address is `process.env.EXPO_PUBLIC_API_URL`, from `mobile/.env.local` (never committed, see `.env.example`). Write it out literally: Expo only inlines the literal form. Restart `npm start` after changing it.
 - **Sync**: `SyncProvider` (`src/view-models/sync.tsx`) wraps the tabs in `(app)/_layout.tsx`, so it runs exactly while signed in. Screens never call it; they keep reading and writing SQLite.
   - It runs `syncNow()` (`src/services/sync.ts`: push, then pull) on start, when the app returns to the front, within 5 seconds of a local change (it polls `hasRowsToPush`), and every 60 seconds. Only one sync runs at a time.
@@ -50,9 +50,12 @@ Run lint, type check and tests before considering a task done.
 - **Tabs**: Each tab is a folder in `src/app/(app)/` with its own `_layout.tsx` (a `Stack`) and `index.tsx`. The `(app)` group doesn't change URLs. Detail screens for a tab go in the same folder.
   - Recipes is the `(recipes)` route group, so its `index.tsx` is the app's start route `/`. Plan, List and Pantry are at `/plan`, `/list` and `/pantry`.
   - The tab bar is defined once in `src/constants/tabs.ts` (`TabRoutes`: route name, href, label, SF Symbol and Material icon). Add or change tabs there, not in the tab bar components.
+- **Dialogs:** use `showMessage()` and `confirmAction()` from `src/components/dialogs.ts`, never `Alert.alert`. React Native's `Alert` does nothing in a browser; `dialogs.web.ts` uses the browser's own `alert`/`confirm`.
 - **Platform-split files**: `.web.tsx` / `.web.ts` variants override the native files of the same name.
   - `app-tabs.tsx` uses native tabs (`expo-router/native-tabs`). Its triggers match on route `name`.
-  - `app-tabs.web.tsx` builds a bottom tab bar with `expo-router/ui` (`Tabs`/`TabList`/`TabTrigger`). Its triggers use `name` plus `href`.
+  - `app-tabs.web.tsx` builds the browser's tabs with `expo-router/ui` (`Tabs`/`TabList`/`TabTrigger`). Its triggers use `name` plus `href`. In windows at least `WebSidebarBreakpoint` (768) wide they are a sidebar on the left; narrower, a bar at the bottom like on a phone. The `TabList` always comes before the `TabSlot` (flipped with `column-reverse` for the bottom bar), so resizing past the breakpoint doesn't recreate the screens.
+- **Web-only design changes must not change the phone design.** Put them in `.web.tsx` files or behind something phones never have, like hover.
+  - Hover feedback: in a `Pressable` style function, `isHovered(state)` from `src/utils/pressable.ts` (only browsers report hover). Buttons, the recipe card and the web tabs use it.
   - `use-color-scheme` follows the same pattern.
 - **Icons**: Use `SymbolView` from `expo-symbols` with `name={{ ios, android, web }}`. iOS uses SF Symbols, and Android and web use Material Symbols names. A bare string renders only on iOS.
   - Android and web draw Material Symbols with an outlined font, so names like `favorite` never look filled.
@@ -88,9 +91,13 @@ Run lint, type check and tests before considering a task done.
 Mobile recipe app built with React Native (Expo) and a local SQLite database.
 A cloud API and database will be added later, so local data must be sync-ready.
 
-**This is a school project.** It will not be published on the App Store or Google Play. It is shown via Expo Go or an installable Android build.
+**This is a school project.** It will not be published on the App Store or Google Play. It is shown via Expo Go, an installable Android build, or in a web browser.
 
-- **Phones and tablets only (decided).** The web version is dropped: login needs `expo-secure-store`, which doesn't work in a browser, and the app only needs to run on phones and tablets. The web-specific code (`.web.tsx` files, `metro.config.js` web setup, `web` in `app.json`) still exists and is to be removed in a separate change.
+- **Phones, tablets and the web (decided).** The student first dropped the web version, then changed their mind: the app must also work in a browser.
+  - In the browser, the login is kept in `localStorage`. The student accepted the trade-off: an XSS bug could leak tokens, but the app never renders users' HTML and access tokens last 15 minutes. httpOnly cookies were rejected as too much API work.
+  - The API allows the web app's address with CORS (`CORS_ORIGINS` in `api/.env`). Locally that is the Expo dev server, `http://localhost:8081`.
+  - Test web changes with `npm run web`. `npx expo export --platform web` checks that the web build compiles.
+  - On the server, Caddy will also serve the web build (see "Decided: backend and login" → Hosting). `web.output` is `server` today and needs to become `single` or `static` for Caddy to serve it as files.
 
 - The school requires a **self-built RESTful API** and **SSL (HTTPS)**. The API is part of what gets graded, so don't replace it with a backend service that generates the API, such as Supabase or Firebase.
 - TheMealDB's free test key `1` is allowed "for educational use", so no supporter key is needed.
@@ -186,7 +193,7 @@ The plan, approved by the student, in five steps, each tested on the phone and c
 2. ~~Login~~ Done: `expo-secure-store` for tokens, `services/api-client.ts` (refreshes on `token_expired`), `services/auth.ts`, sign-in and sign-up screens, all other screens behind login. The API URL is `EXPO_PUBLIC_API_URL` in `mobile/.env.local` (the computer's Wi-Fi IP while developing).
 3. ~~Sync~~ Done: `services/sync.ts` pushes rows with `needs_push = 1`, then pulls all pages and applies them in one transaction, then refreshes screens. Runs on app start, on returning to the app, and a few seconds after a change. A pulled row doesn't overwrite a local row that still needs pushing; a row rejected as `deleted_on_server` is deleted locally.
 4. ~~The Household tab~~ Done: name, members, invite (share sheet), join with code (with data loss warning), leave, remove member, sign out (warns about unsynced changes), delete account, sync status. Switching household empties the local data and pulls the new household's.
-5. Optional: remove the web code.
+5. ~~Remove the web code~~ Cancelled: the app must work in a browser after all. Instead the web version got browser login storage, browser dialogs, and CORS in the API.
 
 - **Data from before login is uploaded** to the household on the first sync (the student's choice). Migration 003 marks all existing rows `needs_push = 1`.
 
@@ -309,6 +316,12 @@ The app runs on phones and tablets (`ios.supportsTablet`) in both portrait and l
 - For card grids, measure the list's own width with `onLayout` and pass it to `getLayout()`, as `RecipeGrid` does. The iPad sidebar and split view make the content narrower than the window
 - Don't use `Dimensions.get()` (it doesn't update on rotation) or device checks like `Device.deviceType`. Decide by available width, not by device type
 - In wide layouts, use the space (grid columns, list and detail side by side). Don't just stretch the phone layout. Constrain reading content such as text and forms to `MaxContentWidth`
+- **Pages with grids or columns** (Plan, List, Pantry) get their side padding from `getPageFrame(width, insets, maxWidth)` in `use-layout.ts`: the content is at most `MaxPageWidth` (1200) wide and centered, so header, search and content line up and nothing stretches across a big monitor.
+  - Work out columns with `getGrid(contentWidth, { minItemWidth, gap, maxColumns })`, from a minimum card width that keeps text readable (e.g. 260 for a pantry item), not from fixed breakpoints.
+  - Give grid items a fixed width (or `maxWidth` with `flex: 1` in a `FlatList`), so a lone item in the last row isn't stretched.
+  - In browsers a scrollbar takes some of the measured width, so measure the grid container itself with `onLayout` when items wrap.
+  - **Plan** (the student's choice): narrow screens show a card per day (`PlanDayCard`); from 640 content width each day is a row across the page (`PlanDayRow`): the day left, its dinners side by side, "+ Add" right, like an agenda. Both use the shared pieces in `plan-day-parts.tsx`.
+  - **List:** two equally wide columns only when "In cart" or "Already at home" has something. Then headings and rows get the same heights (`isAligned`), so they line up across the columns.
 - Respect safe areas in landscape, where the notch and home indicator move to the sides
 
 ## Testing
@@ -334,6 +347,10 @@ The app runs on phones and tablets (`ios.supportsTablet`) in both portrait and l
 - Clean, minimal UI with plenty of whitespace
 - Colors and spacing come from `src/constants/theme.ts` – never hardcode values
 - Support light and dark mode
+- **Warm, family-friendly palette (the student's choice):** cream backgrounds, sand elements, warm browns for text, and a terracotta `accent` (with `onAccent` for text on it).
+  - Use `accent` only for the main action (`PrimaryButton`), the "Today" badge and the selected tab. Everything else stays calm.
+  - Keep text at **4.5:1 contrast** or more (WCAG AA). Terracotta text on the sand colors doesn't reach that, so there the accent goes on icons only (they need 3:1).
+  - Headers use the same colors through `NavigationThemes` in `theme.ts`.
 
 ## Product
 
@@ -347,7 +364,7 @@ Recipes and ingredients come from TheMealDB API.
 2. **Plan** – organize saved recipes into a weekly dinner plan
 3. **List** – the week's shopping list, which follows the plan, minus what's in the pantry
 4. **Pantry** – ingredients the family has at home
-5. **Household** – the family's members, invites and account (placeholder until login exists)
+5. **Household** – the family's members, invites and account
 
 ### Core flow
 

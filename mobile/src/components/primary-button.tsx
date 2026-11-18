@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { isHovered } from '@/utils/pressable';
 
 type PrimaryButtonProps = {
   label: string;
@@ -22,15 +23,16 @@ export function PrimaryButton({ label, onPress, isBusy = false }: PrimaryButtonP
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ busy: isBusy, disabled: isBusy }}
-      style={({ pressed }) => [
+      style={(state) => [
         styles.button,
-        { backgroundColor: theme.text },
-        (pressed || isBusy) && styles.pressed,
+        { backgroundColor: theme.accent },
+        isHovered(state) && styles.hovered,
+        (state.pressed || isBusy) && styles.pressed,
       ]}>
       {isBusy ? (
-        <ActivityIndicator color={theme.background} />
+        <ActivityIndicator color={theme.onAccent} />
       ) : (
-        <ThemedText style={[styles.label, { color: theme.background }]}>{label}</ThemedText>
+        <ThemedText style={[styles.label, { color: theme.onAccent }]}>{label}</ThemedText>
       )}
     </Pressable>
   );
@@ -47,6 +49,9 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 17,
     fontWeight: 600,
+  },
+  hovered: {
+    opacity: 0.85,
   },
   pressed: {
     opacity: 0.7,

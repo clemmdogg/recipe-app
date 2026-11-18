@@ -61,6 +61,7 @@ export function ShoppingListContent({
       emptyMessage="You have everything for this week."
       onToggle={(line) => onToggle(line, false)}
       onRemove={onRemove}
+      isAligned={twoColumns}
     />
   );
   const done = (
@@ -73,11 +74,12 @@ export function ShoppingListContent({
             isChecked
             onToggle={(line) => onToggle(line, true)}
             onRemove={onRemove}
+            isAligned={twoColumns}
           />
           <PrimaryButton label="Bought · Move to pantry" onPress={onBought} />
         </View>
       )}
-      <AtHomeSection lines={data.atHome} onNeedMore={onNeedMore} />
+      <AtHomeSection lines={data.atHome} onNeedMore={onNeedMore} isAligned={twoColumns} />
     </>
   );
 
@@ -106,11 +108,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: Spacing.five,
   },
+  // Equally wide, so the rows of the two columns line up.
   mainColumn: {
-    flex: 3,
+    flex: 1,
   },
   sideColumn: {
-    flex: 2,
+    flex: 1,
     gap: Spacing.five,
   },
   empty: {

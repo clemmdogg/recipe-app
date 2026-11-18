@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { showMessage } from '@/components/dialogs';
 import { ErrorState } from '@/components/error-state';
 import { LoadingState } from '@/components/loading-state';
 import { ThemedText } from '@/components/themed-text';
@@ -23,7 +24,7 @@ export function AddToPlanScreen({ id }: { id: string }) {
         router.back();
       }
     } catch {
-      Alert.alert('Could not add to your plan', 'Please try again.');
+      showMessage('Could not add to your plan', 'Please try again.');
     }
   };
 

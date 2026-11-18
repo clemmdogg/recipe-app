@@ -1,6 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
-import { ShoppingLineRow } from '@/components/shopping/shopping-line-row';
+import {
+  AlignedHeadingMinHeight,
+  ShoppingLineRow,
+} from '@/components/shopping/shopping-line-row';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import type { ShoppingLine } from '@/types/shopping-list';
@@ -13,17 +16,27 @@ type LineSectionProps = {
   emptyMessage?: string;
   onToggle: (line: ShoppingLine) => void;
   onRemove: (line: ShoppingLine) => void;
+  /** Same heading and row heights as the column beside it. */
+  isAligned?: boolean;
 };
 
 /** "To buy" or "In cart": a heading with its lines. */
-export function LineSection({ title, lines, isChecked, emptyMessage, onToggle, onRemove }: LineSectionProps) {
+export function LineSection({
+  title,
+  lines,
+  isChecked,
+  emptyMessage,
+  onToggle,
+  onRemove,
+  isAligned = false,
+}: LineSectionProps) {
   if (lines.length === 0 && !emptyMessage) {
     return null;
   }
 
   return (
     <View style={styles.section}>
-      <ThemedText type="heading" accessibilityRole="header">
+      <ThemedText type="heading" accessibilityRole="header" style={isAligned && styles.alignedHeading}>
         {title} ({lines.length})
       </ThemedText>
       {lines.length === 0 && <ThemedText themeColor="textSecondary">{emptyMessage}</ThemedText>}
@@ -32,6 +45,7 @@ export function LineSection({ title, lines, isChecked, emptyMessage, onToggle, o
           key={line.key}
           line={line}
           isChecked={isChecked}
+          isAligned={isAligned}
           onToggle={() => onToggle(line)}
           // Lines added by hand (or "need more") can be removed; planned lines follow the plan.
           onRemove={!isChecked && line.isStored ? () => onRemove(line) : undefined}
@@ -44,5 +58,10 @@ export function LineSection({ title, lines, isChecked, emptyMessage, onToggle, o
 const styles = StyleSheet.create({
   section: {
     gap: Spacing.two,
+  },
+  alignedHeading: {
+    minHeight: AlignedHeadingMinHeight,
+    textAlignVertical: 'center',
+    lineHeight: AlignedHeadingMinHeight,
   },
 });

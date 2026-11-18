@@ -14,7 +14,7 @@ export default function AppTabs() {
       sidebarAdaptable
       // Always show labels on Android so icons don't shift up when a tab is selected.
       labelVisibilityMode="labeled"
-      labelStyle={{ selected: { color: theme.text } }}>
+      labelStyle={{ selected: { color: theme.accent } }}>
       {TabRoutes.map((tab) => (
         <NativeTabs.Trigger key={tab.name} name={tab.name}>
           <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>

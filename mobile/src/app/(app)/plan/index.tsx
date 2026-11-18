@@ -1,44 +1,49 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { showMessage } from '@/components/dialogs';
 import { ErrorState } from '@/components/error-state';
 import { LoadingState } from '@/components/loading-state';
 import { PlanDayCard } from '@/components/plan/plan-day-card';
+import { PlanDayRow } from '@/components/plan/plan-day-row';
 import { WeekHeader } from '@/components/plan/week-header';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, MaxPageWidth, Spacing } from '@/constants/theme';
+import { getPageFrame } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { useWeekPlan } from '@/view-models/use-week-plan';
 
-/** From this width the seven days are shown side by side instead of stacked. */
-const WeekColumnsMinWidth = 1000;
+/** From this content width, each day is a row across the page (an agenda) instead of a card. */
+const DayRowsMinWidth = 640;
 
 export default function PlanScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const plan = useWeekPlan();
-  // Measure the screen itself: on iPad the sidebar makes it narrower than the window.
+  // Measure the screen itself: the iPad and browser sidebars make it narrower than the window.
   const [width, setWidth] = useState(window.width);
-  const showColumns = width >= WeekColumnsMinWidth;
+  const showRows = getPageFrame(width, insets).contentWidth >= DayRowsMinWidth;
+  // Cards on phones stay at reading width; rows use the page width, with the header lined up.
+  const frame = getPageFrame(width, insets, showRows ? MaxPageWidth : MaxContentWidth);
 
   const onRemove = (entryId: string) => {
     plan.removeEntry(entryId).catch(() => {
-      Alert.alert('Could not remove the dinner', 'Please try again.');
+      showMessage('Could not remove the dinner', 'Please try again.');
     });
   };
 
+  const Day = showRows ? PlanDayRow : PlanDayCard;
   let days = (
-    <View style={showColumns ? styles.columns : styles.stack}>
+    <View style={showRows ? styles.rows : styles.cards}>
       {plan.days.map((day) => (
-        <View key={day.key} style={showColumns && styles.column}>
-          <PlanDayCard
-            day={day}
-            onAdd={() => router.push({ pathname: '/plan/add-dinner', params: { date: day.key } })}
-            onRemove={onRemove}
-          />
-        </View>
+        <Day
+          key={day.key}
+          day={day}
+          onAdd={() => router.push({ pathname: '/plan/add-dinner', params: { date: day.key } })}
+          onRemove={onRemove}
+        />
       ))}
     </View>
   );
@@ -56,21 +61,19 @@ export default function PlanScreen() {
       contentContainerStyle={[
         styles.content,
         {
-          paddingLeft: Spacing.three + insets.left,
-          paddingRight: Spacing.three + insets.right,
+          paddingLeft: frame.paddingLeft,
+          paddingRight: frame.paddingRight,
           paddingBottom: Spacing.four + insets.bottom,
         },
       ]}>
-      <View style={[styles.header, !showColumns && styles.narrow]}>
-        <WeekHeader
-          weekStart={plan.week.weekStart}
-          today={plan.week.today}
-          onPrevious={plan.week.showPreviousWeek}
-          onNext={plan.week.showNextWeek}
-          onToday={plan.week.showCurrentWeek}
-        />
-      </View>
-      <View style={!showColumns && styles.narrow}>{days}</View>
+      <WeekHeader
+        weekStart={plan.week.weekStart}
+        today={plan.week.today}
+        onPrevious={plan.week.showPreviousWeek}
+        onNext={plan.week.showNextWeek}
+        onToday={plan.week.showCurrentWeek}
+      />
+      {days}
     </ScrollView>
   );
 }
@@ -80,26 +83,10 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
     paddingTop: Spacing.three,
   },
-  header: {
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: MaxContentWidth,
-  },
-  narrow: {
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: MaxContentWidth,
-  },
-  stack: {
+  cards: {
     gap: Spacing.three,
   },
-  columns: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  rows: {
     gap: Spacing.two,
-  },
-  column: {
-    flex: 1,
-    minWidth: 0,
   },
 });

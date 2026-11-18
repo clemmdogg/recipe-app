@@ -1,6 +1,7 @@
 import { router, Stack } from 'expo-router';
-import { Alert, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
+import { showMessage } from '@/components/dialogs';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingState } from '@/components/loading-state';
@@ -22,7 +23,7 @@ export function RecipeScreen({ id, tab }: RecipeScreenProps) {
 
   const onToggleSaved = () => {
     details.toggleSaved().catch(() => {
-      Alert.alert('Could not update your saved recipes', 'Please try again.');
+      showMessage('Could not update your saved recipes', 'Please try again.');
     });
   };
 

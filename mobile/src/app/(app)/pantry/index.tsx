@@ -1,8 +1,9 @@
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { showMessage } from '@/components/dialogs';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingState } from '@/components/loading-state';
@@ -12,27 +13,30 @@ import { QuickAdd } from '@/components/pantry/quick-add';
 import { SearchField } from '@/components/search-field';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { getGrid, getPageFrame } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { usePantry } from '@/view-models/use-pantry';
 
-/** Item columns by list width: one on phones, more on tablets and in landscape. */
-function columnCount(width: number): number {
-  return width >= 900 ? 3 : width >= 600 ? 2 : 1;
-}
+const ItemMinWidth = 260;
+const ItemGap = Spacing.two;
 
 export default function PantryScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const pantry = usePantry();
+  // Measure the list itself: the iPad and browser sidebars make it narrower than the window.
   const [width, setWidth] = useState(window.width);
-  const columns = columnCount(width);
+  const frame = getPageFrame(width, insets);
+  // One column on phones, more on wider screens.
+  const grid = getGrid(frame.contentWidth, { minItemWidth: ItemMinWidth, gap: ItemGap, maxColumns: 4 });
+  const columns = grid.columns;
 
   const onAdd = (name: string) => {
-    pantry.add(name).catch(() => Alert.alert('Could not add to your pantry', 'Please try again.'));
+    pantry.add(name).catch(() => showMessage('Could not add to your pantry', 'Please try again.'));
   };
   const onRemove = (id: string) => {
-    pantry.remove(id).catch(() => Alert.alert('Could not remove from your pantry', 'Please try again.'));
+    pantry.remove(id).catch(() => showMessage('Could not remove from your pantry', 'Please try again.'));
   };
 
   const items = pantry.items.data ?? [];
@@ -91,15 +95,15 @@ export default function PantryScreen() {
       contentContainerStyle={[
         styles.content,
         {
-          paddingLeft: Spacing.three + insets.left,
-          paddingRight: Spacing.three + insets.right,
+          paddingLeft: frame.paddingLeft,
+          paddingRight: frame.paddingRight,
           paddingBottom: Spacing.four + insets.bottom,
         },
       ]}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       renderItem={({ item }) => (
-        <View style={[styles.item, { backgroundColor: theme.backgroundElement }]}>
+        <View style={[styles.item, { maxWidth: grid.itemWidth, backgroundColor: theme.backgroundElement }]}>
           <IngredientRow
             name={item.name}
             trailing={

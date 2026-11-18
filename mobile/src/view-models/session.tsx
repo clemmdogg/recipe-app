@@ -3,7 +3,7 @@ import { createContext, use, useEffect, useState, type ReactNode } from 'react';
 import { useDatabase } from '@/db/use-database';
 import { clearHouseholdData } from '@/repositories/local-data';
 import { createApiClient, type ApiClient } from '@/services/api-client';
-import { createSecureAuthStorage, type AuthStorage } from '@/services/auth-storage';
+import { createAuthStorage, type AuthStorage } from '@/services/auth-storage';
 import { restoreSession, signIn, signOut, signUp } from '@/services/auth';
 import { deleteAccount } from '@/services/household';
 import type { Session } from '@/types/session';
@@ -35,7 +35,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const db = useDatabase();
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [storage] = useState<AuthStorage>(createSecureAuthStorage);
+  const [storage] = useState<AuthStorage>(createAuthStorage);
   const [client] = useState<ApiClient>(() =>
     createApiClient({
       baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',

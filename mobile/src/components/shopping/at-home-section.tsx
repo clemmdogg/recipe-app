@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { IngredientRow } from '@/components/pantry/ingredient-row';
-import { describeUses } from '@/components/shopping/shopping-line-row';
+import { AlignedHeadingMinHeight, AlignedRowMinHeight, describeUses } from '@/components/shopping/shopping-line-row';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -12,10 +12,12 @@ import type { ShoppingLine } from '@/types/shopping-list';
 type AtHomeSectionProps = {
   lines: ShoppingLine[];
   onNeedMore: (line: ShoppingLine) => void;
+  /** Same heading and row heights as the column beside it. */
+  isAligned?: boolean;
 };
 
 /** Collapsed list of needed ingredients skipped because they're in the pantry. */
-export function AtHomeSection({ lines, onNeedMore }: AtHomeSectionProps) {
+export function AtHomeSection({ lines, onNeedMore, isAligned = false }: AtHomeSectionProps) {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   if (lines.length === 0) {
@@ -48,7 +50,9 @@ export function AtHomeSection({ lines, onNeedMore }: AtHomeSectionProps) {
       )}
       {isOpen &&
         lines.map((line) => (
-          <View key={line.key} style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
+          <View
+            key={line.key}
+            style={[styles.row, isAligned && styles.alignedRow, { backgroundColor: theme.backgroundElement }]}>
             <IngredientRow
               name={line.name}
               detail={describeUses(line)}
@@ -80,7 +84,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 44,
+    minHeight: AlignedHeadingMinHeight,
+  },
+  alignedRow: {
+    minHeight: AlignedRowMinHeight,
+    justifyContent: 'center',
   },
   row: {
     paddingHorizontal: Spacing.three,
