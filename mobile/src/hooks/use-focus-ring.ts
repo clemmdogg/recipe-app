@@ -6,7 +6,8 @@ import { useTheme } from '@/hooks/use-theme';
 /**
  * A terracotta border around a text field while it has focus, in browsers. Browsers draw their
  * own black outline on the focused input instead, which looks out of place; that is turned off
- * with `outlineWidth: 0` on the input. Keyboard users still see where they are typing.
+ * with a solid, zero-width, transparent outline on the input (Chrome ignores the width alone).
+ * Keyboard users still see where they are typing.
  * Phones show the cursor and keyboard, so their design stays as it is.
  */
 export function useFocusRing(): {

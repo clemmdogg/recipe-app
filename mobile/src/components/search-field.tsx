@@ -69,7 +69,10 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     fontSize: 17,
     // The browser's own focus outline; the container shows focus instead (useFocusRing).
+    // Chrome ignores the width while the outline style is "auto", so set all three.
+    outlineStyle: 'solid',
     outlineWidth: 0,
+    outlineColor: 'transparent',
   },
   pressed: {
     opacity: 0.6,

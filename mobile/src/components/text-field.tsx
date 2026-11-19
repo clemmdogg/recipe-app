@@ -49,6 +49,9 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.four,
     fontSize: 17,
     // The browser's own focus outline; the field's border shows focus instead (useFocusRing).
+    // Chrome ignores the width while the outline style is "auto", so set all three.
+    outlineStyle: 'solid',
     outlineWidth: 0,
+    outlineColor: 'transparent',
   },
 });
