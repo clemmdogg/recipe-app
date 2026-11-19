@@ -93,6 +93,7 @@ A cloud API and database will be added later, so local data must be sync-ready.
 
 **This is a school project.** It will not be published on the App Store or Google Play. It is shown via Expo Go, an installable Android build, or in a web browser.
 
+- **Installable Android app:** built with EAS Build (`eas.json`, profile `preview`): an `.apk` named "Recipe App", Android id `dk.clemdev.recipes` (can't change without becoming a new app), talking to `https://api.recipes.clemdev.dk` (set in the profile's `env`). Build with `npx eas-cli@latest build -p android --profile preview` from `mobile/`; EAS counts the version up (`appVersionSource: remote`). The `eas-build-pre-install` script installs npm 11.6.1 first, for the same lock file reason as the Dockerfiles. Play Protect warns about it because it isn't from Google Play; "Install anyway" is expected.
 - **Phones, tablets and the web (decided).** The student first dropped the web version, then changed their mind: the app must also work in a browser.
   - In the browser, the login is kept in `localStorage`. The student accepted the trade-off: an XSS bug could leak tokens, but the app never renders users' HTML and access tokens last 15 minutes. httpOnly cookies were rejected as too much API work.
   - The API allows the web app's address with CORS (`CORS_ORIGINS` in `api/.env`). Locally that is the Expo dev server, `http://localhost:8081`.
