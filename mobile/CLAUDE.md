@@ -58,6 +58,8 @@ Run lint, type check and tests before considering a task done.
   - Hover feedback: in a `Pressable` style function, `isHovered(state)` from `src/utils/pressable.ts` (only browsers report hover). Buttons, the recipe card and the web tabs use it.
   - Text fields: browsers draw a black outline on a focused input. `SearchField` and `TextField` turn it off with `outlineStyle: 'solid'`, `outlineWidth: 0` and `outlineColor: 'transparent'` (Chrome ignores the width while the style is `auto`) and show a terracotta border instead, from `useFocusRing()` (`src/hooks/use-focus-ring.ts`, browsers only). Use those components, or the hook, for any new text input, so keyboard users still see where they type.
   - `use-color-scheme` follows the same pattern.
+- **Settings and theme:** `SettingsProvider` / `useSettings()` (`src/view-models/settings.tsx`) sit inside `SQLiteProvider` in the root layout, around the navigation theme. They pass the chosen theme to `useColorScheme()` through `ThemePreferenceContext` (`src/hooks/theme-preference-context.ts`), so always use `@/hooks/use-color-scheme`, never React Native's. On phones, `Appearance.setColorScheme` makes system UI follow it too.
+- **Sensor (the school's accelerometer requirement):** shaking the phone on the Recipes tab opens a random recipe (`random.php`), next to a "Surprise me" button. `useShake()` (`src/hooks/use-shake.ts`, `expo-sensors` Accelerometer) only listens while the screen is focused and the setting is on; the threshold and cooldown are in `src/utils/shake.ts`. The web version (`use-shake.web.ts`) never listens, because browsers need a motion permission asked inside a tap.
 - **Icons**: Use `SymbolView` from `expo-symbols` with `name={{ ios, android, web }}`. iOS uses SF Symbols, and Android and web use Material Symbols names. A bare string renders only on iOS.
   - Android and web draw Material Symbols with an outlined font, so names like `favorite` never look filled.
   - For a filled icon, pass `weight={FilledSymbolWeight}` from `src/constants/symbols.ts`, and use the `.fill` SF Symbol on iOS.
@@ -176,7 +178,7 @@ The plan is to build this after the pantry and shopping list work locally. Check
 
 **Decided: settings**
 
-- None exist yet.
+- **Personal settings exist** (for the school's requirement to save settings on the device): theme (System/Light/Dark) and "Shake for a recipe", in the Household tab's Settings section. They are stored in the local `device_settings` table (migration 004, `repositories/settings.ts`), never synced, and kept when signing out.
 - New settings are **household-wide** by default, e.g. which day the week starts.
 - Settings about the person or device, such as light/dark mode or notifications, are **personal**.
 
@@ -278,6 +280,7 @@ The student wants the code **loosely coupled**: each part knows as little as pos
 - **Exception:** the `ingredients` table is a cache of TheMealDB's ingredient list, not household data.
   - It is keyed by name, has only `updated_at`, and is never synced.
   - `useIngredientCatalog` downloads it once and refreshes it every 30 days.
+- **Exception:** `device_settings` holds personal settings (key, JSON value, `updated_at`), never synced and not cleared at sign-out. Add a setting to `DeviceSettings` (`src/types/settings.ts`), its default, and a parser in `repositories/settings.ts`.
 - **Exception:** `sync_state` is device bookkeeping (e.g. the last pull's cursor), a key/value table that is never synced.
 - **Sync columns** on the six synced tables (`SyncedTables` in `src/db/migrations/003-sync.ts`):
   - `needs_push = 1` means this device changed the row and hasn't uploaded it. **Triggers set it automatically** on every insert and update the app makes, so repository functions never touch it.

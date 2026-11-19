@@ -1,18 +1,28 @@
+import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+
+import { showMessage } from '@/components/dialogs';
 
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { LoadingState } from '@/components/loading-state';
 import { CategoryChips } from '@/components/recipes/category-chips';
 import { RecipeGrid } from '@/components/recipes/recipe-grid';
+import { SurpriseButton } from '@/components/recipes/surprise-button';
 import { SearchField } from '@/components/search-field';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useRecipeBrowser, type BrowseMode } from '@/view-models/use-recipe-browser';
+import { useSurpriseRecipe } from '@/view-models/use-surprise-recipe';
 
 export default function RecipesScreen() {
   const browser = useRecipeBrowser();
   const { mode, recipes } = browser;
+  const surprise = useSurpriseRecipe({
+    onFound: (id) => router.push({ pathname: '/recipe/[id]', params: { id } }),
+    onError: (error) =>
+      showMessage('Could not find a recipe', error instanceof Error ? error.message : 'Please try again.'),
+  });
 
   const header = (
     <View style={styles.header}>
@@ -22,6 +32,9 @@ export default function RecipesScreen() {
         placeholder="Search recipes, e.g. chicken"
         accessibilityLabel="Search recipes"
       />
+      {mode.kind !== 'search' && (
+        <SurpriseButton onPress={surprise.surprise} isBusy={surprise.isPicking} canShake={surprise.canShake} />
+      )}
       {mode.kind !== 'search' && browser.categories.length > 0 && (
         <CategoryChips
           categories={browser.categories}

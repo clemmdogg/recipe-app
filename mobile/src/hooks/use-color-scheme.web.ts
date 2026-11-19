@@ -1,24 +1,26 @@
-import { useSyncExternalStore } from 'react';
-import { useColorScheme as useRNColorScheme } from 'react-native';
+import { useContext, useSyncExternalStore } from 'react';
+import { useColorScheme as useSystemColorScheme } from 'react-native';
+
+import { ThemePreferenceContext } from '@/hooks/theme-preference-context';
 
 const subscribe = () => () => {};
 
 /**
- * To support static rendering, this value needs to be re-calculated on the client side for web.
- * The server snapshot is `false` and the client snapshot is `true`, so React re-renders after hydration.
+ * "light" or "dark": the person's choice, or the browser's own mode when they chose "system".
+ * To support static rendering, the browser's mode is only read on the client: the server
+ * snapshot is `false` and the client snapshot is `true`, so React re-renders after hydration.
  */
-export function useColorScheme() {
+export function useColorScheme(): 'light' | 'dark' | null | undefined {
   const hasHydrated = useSyncExternalStore(
     subscribe,
     () => true,
     () => false
   );
+  const preference = useContext(ThemePreferenceContext);
+  const systemScheme = useSystemColorScheme();
 
-  const colorScheme = useRNColorScheme();
-
-  if (hasHydrated) {
-    return colorScheme;
+  if (preference !== 'system') {
+    return preference;
   }
-
-  return 'light';
+  return hasHydrated ? systemScheme : 'light';
 }

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { confirmAction, showMessage } from '@/components/dialogs';
@@ -8,6 +8,7 @@ import { AccountSection } from '@/components/household/account-section';
 import { AppName } from '@/components/app-logo';
 import { InviteCard } from '@/components/household/invite-card';
 import { MembersSection } from '@/components/household/members-section';
+import { SettingsSection } from '@/components/household/settings-section';
 import { SyncStatus } from '@/components/household/sync-status';
 import { PrimaryButton } from '@/components/primary-button';
 import { SecondaryButton } from '@/components/secondary-button';
@@ -15,6 +16,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { HouseholdMember, Invite } from '@/types/household';
 import { describeHouseholdError } from '@/view-models/household-errors';
+import { useSettings } from '@/view-models/settings';
 import { useHousehold } from '@/view-models/use-household';
 
 type BusyAction = 'invite' | 'leave' | 'signOut';
@@ -24,6 +26,7 @@ export function HouseholdScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const vm = useHousehold();
+  const { settings, update: updateSettings } = useSettings();
   const [busy, setBusy] = useState<BusyAction | null>(null);
   // Remembers which household the invite is for, so it disappears after joining or leaving.
   const [created, setCreated] = useState<{ invite: Invite; householdId: string } | null>(null);
@@ -142,6 +145,14 @@ export function HouseholdScreen() {
         </View>
 
         <SyncStatus status={vm.syncStatus} lastSyncedAt={vm.lastSyncedAt} onSync={vm.sync} />
+
+        <SettingsSection
+          settings={settings}
+          onChange={(changes) => {
+            updateSettings(changes).catch(() => showMessage('Could not save the setting', 'Please try again.'));
+          }}
+          showShakeSetting={Platform.OS !== 'web'}
+        />
 
         <AccountSection
           user={vm.session?.user}

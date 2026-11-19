@@ -1,25 +1,35 @@
 import { Stack, ThemeProvider } from 'expo-router';
 import { SQLiteProvider } from 'expo-sqlite';
-import { useColorScheme } from 'react-native';
+import type { ReactNode } from 'react';
 
 import { SplashScreenController } from '@/components/splash-screen-controller';
 import { NavigationThemes } from '@/constants/theme';
 import { DatabaseName, initializeDatabase } from '@/db/initialize';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { SessionProvider, useSession } from '@/view-models/session';
+import { SettingsProvider } from '@/view-models/settings';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={NavigationThemes[colorScheme === 'dark' ? 'dark' : 'light']}>
-      {/* Runs migrations before rendering; view models get the database via useDatabase(). */}
-      <SQLiteProvider databaseName={DatabaseName} onInit={initializeDatabase}>
-        <SessionProvider>
-          <SplashScreenController />
-          <RootNavigator />
-        </SessionProvider>
-      </SQLiteProvider>
-    </ThemeProvider>
+    // Runs migrations before rendering; view models get the database via useDatabase().
+    <SQLiteProvider databaseName={DatabaseName} onInit={initializeDatabase}>
+      {/* The theme setting is stored in the database, so settings load before the theme is chosen. */}
+      <SettingsProvider>
+        <NavigationTheme>
+          <SessionProvider>
+            <SplashScreenController />
+            <RootNavigator />
+          </SessionProvider>
+        </NavigationTheme>
+      </SettingsProvider>
+    </SQLiteProvider>
   );
+}
+
+/** Headers and screen backgrounds in the chosen light or dark theme. */
+function NavigationTheme({ children }: { children: ReactNode }) {
+  const colorScheme = useColorScheme();
+  return <ThemeProvider value={NavigationThemes[colorScheme === 'dark' ? 'dark' : 'light']}>{children}</ThemeProvider>;
 }
 
 /** Login is required: the tabs only exist while signed in, the sign-in screens only while not. */

@@ -6,6 +6,7 @@ import searchArrabiata from '../../jest/fixtures/mealdb-search-arrabiata.json';
 import {
   getCategories,
   getIngredients,
+  getRandomRecipe,
   getRecipe,
   ingredientImageUrl,
   getRecipesByCategory,
@@ -96,6 +97,21 @@ describe('getRecipe', () => {
     respondWith({ meals: null });
 
     await expect(getRecipe('0')).resolves.toBeNull();
+  });
+});
+
+describe('getRandomRecipe', () => {
+  it('returns the random recipe TheMealDB picked', async () => {
+    respondWith(searchArrabiata);
+
+    await expect(getRandomRecipe()).resolves.toMatchObject({ id: '52771' });
+    expect(requestedUrl()).toContain('/random.php');
+  });
+
+  it('fails clearly when TheMealDB sends no recipe', async () => {
+    respondWith({ meals: null });
+
+    await expect(getRandomRecipe()).rejects.toBeInstanceOf(MealDbError);
   });
 });
 

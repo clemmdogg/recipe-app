@@ -31,6 +31,16 @@ export async function getRecipe(id: string, signal?: AbortSignal): Promise<Recip
   return meal ? toRecipe(meal) : null;
 }
 
+/** One random recipe, for "Surprise me" and shaking the phone. */
+export async function getRandomRecipe(signal?: AbortSignal): Promise<Recipe> {
+  const data = await getJson<MealsResponse>('/random.php', signal);
+  const [meal] = data.meals ?? [];
+  if (!meal) {
+    throw new MealDbError('TheMealDB sent no recipe.');
+  }
+  return toRecipe(meal);
+}
+
 export async function getRecipesByCategory(
   category: string,
   signal?: AbortSignal

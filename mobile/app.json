@@ -49,6 +49,12 @@
       ],
       "expo-sqlite",
       "expo-secure-store",
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Allow $(PRODUCT_NAME) to use motion, so you can shake your phone for a random recipe."
+        }
+      ],
       "expo-status-bar",
       "expo-web-browser"
     ],
