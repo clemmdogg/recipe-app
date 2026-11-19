@@ -56,6 +56,7 @@ Run lint, type check and tests before considering a task done.
   - `app-tabs.web.tsx` builds the browser's tabs with `expo-router/ui` (`Tabs`/`TabList`/`TabTrigger`). Its triggers use `name` plus `href`. In windows at least `WebSidebarBreakpoint` (768) wide they are a sidebar on the left; narrower, a bar at the bottom like on a phone. The `TabList` always comes before the `TabSlot` (flipped with `column-reverse` for the bottom bar), so resizing past the breakpoint doesn't recreate the screens.
 - **Web-only design changes must not change the phone design.** Put them in `.web.tsx` files or behind something phones never have, like hover.
   - Hover feedback: in a `Pressable` style function, `isHovered(state)` from `src/utils/pressable.ts` (only browsers report hover). Buttons, the recipe card and the web tabs use it.
+  - Text fields: browsers draw a black outline on a focused input. `SearchField` and `TextField` turn it off with `outlineWidth: 0` and show a terracotta border instead, from `useFocusRing()` (`src/hooks/use-focus-ring.ts`, browsers only). Use those components, or the hook, for any new text input, so keyboard users still see where they type.
   - `use-color-scheme` follows the same pattern.
 - **Icons**: Use `SymbolView` from `expo-symbols` with `name={{ ios, android, web }}`. iOS uses SF Symbols, and Android and web use Material Symbols names. A bare string renders only on iOS.
   - Android and web draw Material Symbols with an outlined font, so names like `favorite` never look filled.
@@ -352,10 +353,12 @@ The app runs on phones and tablets (`ios.supportsTablet`) in both portrait and l
   - Use `accent` only for the main action (`PrimaryButton`), the "Today" badge and the selected tab. Everything else stays calm.
   - Keep text at **4.5:1 contrast** or more (WCAG AA). Terracotta text on the sand colors doesn't reach that, so there the accent goes on icons only (they need 3:1).
   - Headers use the same colors through `NavigationThemes` in `theme.ts`.
+- **Logo:** a shopping cart with a fork and spoon in it (the student's choice, to match the name). The source is `assets/icon-mealcart.svg`; the app icon, Android adaptive icon layers, splash screens (light and dark) and favicon in `assets/images/` are rendered from it. Inside the app, use `<AppLogo />` and `AppName` from `src/components/app-logo.tsx` (sign-in and sign-up, the web sidebar, the invite page) instead of writing the name.
+- Only the visible name is "MealCart". The Expo slug (`recipe-app`), the Android id (`dk.clemdev.recipes`), the web addresses and the folder names stay as they are.
 
 ## Product
 
-English-language app that helps families with children plan dinners,
+**MealCart** (the student's name for it): an English-language app that helps families with children plan dinners,
 shop for groceries and keep track of ingredients at home.
 Recipes and ingredients come from TheMealDB API.
 

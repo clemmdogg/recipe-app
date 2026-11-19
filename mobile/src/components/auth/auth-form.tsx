@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppLogo } from '@/components/app-logo';
 import { PrimaryButton } from '@/components/primary-button';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
@@ -62,10 +63,13 @@ export function AuthForm({ mode }: AuthFormProps) {
       keyboardShouldPersistTaps="handled">
       <View style={styles.form}>
         <View style={styles.header}>
-          <ThemedText type="subtitle" accessibilityRole="header">
+          <AppLogo />
+          <ThemedText type="heading" accessibilityRole="header" style={styles.centered}>
             {texts.title}
           </ThemedText>
-          <ThemedText themeColor="textSecondary">{texts.intro}</ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.centered}>
+            {texts.intro}
+          </ThemedText>
         </View>
 
         {mode === 'signUp' && (
@@ -140,8 +144,12 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   header: {
+    alignItems: 'center',
     gap: Spacing.two,
     marginBottom: Spacing.two,
+  },
+  centered: {
+    textAlign: 'center',
   },
   switch: {
     alignSelf: 'center',

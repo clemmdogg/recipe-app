@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { confirmAction, showMessage } from '@/components/dialogs';
 import { AccountSection } from '@/components/household/account-section';
+import { AppName } from '@/components/app-logo';
 import { InviteCard } from '@/components/household/invite-card';
 import { MembersSection } from '@/components/household/members-section';
 import { SyncStatus } from '@/components/household/sync-status';
@@ -44,7 +45,7 @@ export function HouseholdScreen() {
     const name = vm.household.data?.name ?? vm.session?.household.name ?? 'our household';
     // Some browsers have no share sheet; the code is on screen in the invite card anyway.
     Share.share({
-      message: `Join "${name}" in the recipe app, so we share recipes, the meal plan, the shopping list and the pantry. Open Household → Join with code and enter ${toShare.code}, or open ${toShare.url}. The invite works for 7 days.`,
+      message: `Join "${name}" in ${AppName}, so we share recipes, the meal plan, the shopping list and the pantry. Open Household → Join with code and enter ${toShare.code}, or open ${toShare.url}. The invite works for 7 days.`,
     }).catch(() => undefined);
   };
 

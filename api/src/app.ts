@@ -73,8 +73,8 @@ export async function buildApp({
   await app.register(fastifySwagger, {
     openapi: {
       info: {
-        title: 'Recipe App API',
-        description: 'Accounts, households and sync for the recipe app.',
+        title: 'MealCart API',
+        description: 'Accounts, households and sync for the MealCart app.',
         version: '1.0.0',
       },
       components: {

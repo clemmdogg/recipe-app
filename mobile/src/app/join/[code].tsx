@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppLogo, AppName } from '@/components/app-logo';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -28,11 +29,13 @@ export default function InviteLinkScreen() {
       style={{ backgroundColor: theme.background }}
       contentContainerStyle={[styles.content, { paddingBottom: Spacing.five + insets.bottom }]}>
       <View style={styles.column}>
+        <AppLogo />
         <ThemedText type="subtitle" accessibilityRole="header">
           You&apos;re invited
         </ThemedText>
         <ThemedText themeColor="textSecondary">
-          Someone in your family invited you to share recipes, the meal plan, the shopping list and the pantry.
+          Someone in your family invited you to {AppName}, to share recipes, the meal plan, the shopping list
+          and the pantry.
         </ThemedText>
 
         <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>

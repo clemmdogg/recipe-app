@@ -1,0 +1,23 @@
+<!--
+  The MealCart symbol: a shopping cart with a fork and spoon in it (shopping for the family's meals).
+  The source for the app icon, the Android adaptive icon layers, the splash screens and the
+  favicon in assets/images/, and the in-app logo (AppLogo). Drawn on a 1024 × 1024 canvas and
+  scaled to fit inside the middle 61 % (a circle of radius 312), inside Android's adaptive-icon safe zone.
+  MARK is replaced by the symbol's color where it is used.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <g transform="translate(512 512) scale(0.78) translate(-515 -512)" fill="none" stroke="MARK" stroke-linecap="round" stroke-linejoin="round">
+    <!-- The frame: handle, the side down to the bottom bar. -->
+    <path d="M 180 320 H 270 L 360 700 H 790" stroke-width="44"/>
+    <!-- Fork. -->
+    <path d="M 470 200 V 290 M 515 200 V 290 M 560 200 V 290 M 470 290 C 470 330, 560 330, 560 290 M 515 320 V 560" stroke-width="22"/>
+    <!-- Spoon. -->
+    <ellipse cx="665" cy="250" rx="44" ry="64" fill="MARK" stroke="none"/>
+    <path d="M 665 300 V 560" stroke-width="26"/>
+    <!-- The basket. -->
+    <path d="M 300 380 H 850 L 800 620 H 350 Z" stroke-width="40"/>
+    <!-- Wheels. -->
+    <circle cx="410" cy="790" r="48" fill="MARK" stroke="none"/>
+    <circle cx="740" cy="790" r="48" fill="MARK" stroke="none"/>
+  </g>
+</svg>

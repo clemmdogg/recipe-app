@@ -1,9 +1,10 @@
 import { TabList, TabSlot, TabTrigger, Tabs, type TabTriggerSlotProps } from 'expo-router/ui';
 import { SymbolView, type AndroidSymbol } from 'expo-symbols';
 import type { ComponentRef, Ref } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppLogo } from '@/components/app-logo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing, WebSidebarBreakpoint } from '@/constants/theme';
@@ -34,9 +35,9 @@ export default function AppTabs() {
       <TabList asChild>
         <ThemedView type="backgroundElement" style={tabListStyle}>
           {isSidebar && (
-            <ThemedText type="heading" style={styles.appName}>
-              Recipe App
-            </ThemedText>
+            <View style={styles.appName}>
+              <AppLogo size={32} layout="inline" />
+            </View>
           )}
           {TabRoutes.map((tab) => (
             <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
